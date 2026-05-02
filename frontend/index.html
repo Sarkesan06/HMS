@@ -473,6 +473,18 @@ function showError(elementId, message) {
     }
 }
 
+async function parseResponseBody(res) {
+    const text = await res.text();
+    if (!text) {
+        return {};
+    }
+    try {
+        return JSON.parse(text);
+    } catch (error) {
+        return { message: text };
+    }
+}
+
 // Regular Login
 function login() {
     const emailInput = document.getElementById("email").value.trim();
@@ -500,7 +512,13 @@ function login() {
             password: passwordInput
         })
     })
-    .then(res => res.json())
+    .then(async res => {
+        const data = await parseResponseBody(res);
+        if (!res.ok && !data.message) {
+            data.message = `Request failed with HTTP ${res.status}`;
+        }
+        return data;
+    })
     .then(data => {
         if (data.access_token) {
             localStorage.setItem("token", data.access_token);
@@ -546,7 +564,13 @@ function handleGoogleSignIn(response) {
             token: credential
         })
     })
-    .then(res => res.json())
+    .then(async res => {
+        const data = await parseResponseBody(res);
+        if (!res.ok && !data.message) {
+            data.message = `Request failed with HTTP ${res.status}`;
+        }
+        return data;
+    })
     .then(data => {
         if (data.access_token) {
             localStorage.setItem("token", data.access_token);
@@ -614,7 +638,13 @@ function register() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestData)
     })
-    .then(res => res.json())
+    .then(async res => {
+        const data = await parseResponseBody(res);
+        if (!res.ok && !data.message) {
+            data.message = `Request failed with HTTP ${res.status}`;
+        }
+        return data;
+    })
     .then(data => {
         alert(data.message);
         if (data.message.includes("successfully")) {
