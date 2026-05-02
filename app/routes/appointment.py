@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from bson.objectid import ObjectId
 from flask_mail import Message
 from app import mail
+from config import Config
 
 # Try to import ML models, but don't fail if not available
 try:
@@ -864,7 +865,7 @@ def send_booking_confirmation_email(patient_email, patient_name, doctor_name, ap
                 </div>
                 
                 <div style="text-align: center; margin-top: 20px;">
-                    <a href="http://localhost:5000" class="button">📅 View My Appointments</a>
+                    <a href="{Config.FRONTEND_URL}" class="button">📅 View My Appointments</a>
                 </div>
             </div>
             <div class="footer">

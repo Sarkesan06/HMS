@@ -1,6 +1,7 @@
 from app import create_app
 from apscheduler.schedulers.background import BackgroundScheduler
 from app.appointment_checker import check_and_send_reminders
+import os
 
 app = create_app()
 
@@ -14,4 +15,5 @@ scheduler.add_job(job_wrapper, 'interval', minutes=1)
 scheduler.start()
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
+    port = int(os.getenv("PORT", "5000"))
+    app.run(host="0.0.0.0", port=port, debug=True, use_reloader=False)

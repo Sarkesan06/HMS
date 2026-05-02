@@ -6,6 +6,7 @@ from flask_cors import CORS
 from config import Config
 from flask_mail import Mail
 from datetime import timedelta
+import os
 
 # Extensions
 mongo = PyMongo()
@@ -26,7 +27,10 @@ def create_app():
     
     # Initialize extensions
     mail.init_app(app)
-    CORS(app, supports_credentials=True, origins="*")
+    cors_origins = os.getenv("CORS_ORIGINS", "*")
+    if cors_origins != "*":
+        cors_origins = [origin.strip() for origin in cors_origins.split(",") if origin.strip()]
+    CORS(app, supports_credentials=True, origins=cors_origins)
     mongo.init_app(app)
     jwt.init_app(app)
     bcrypt.init_app(app)

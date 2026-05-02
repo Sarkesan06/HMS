@@ -2474,9 +2474,12 @@ body.show-chatbot .chatbot-popup {
 <script>
 
 // ================= FIXED BASE URL =================
-const API_HOST = window.location.hostname || "127.0.0.1";
-const API_PROTOCOL = window.location.protocol === "https:" ? "https:" : "http:";
-const BASE_URL = `${API_PROTOCOL}//${API_HOST}:5000`;
+const BASE_URL =
+    window.__API_BASE_URL__ ||
+    localStorage.getItem("apiBaseUrl") ||
+    (window.location.origin && window.location.origin !== "null" && window.location.origin !== "file://"
+        ? window.location.origin
+        : `${window.location.protocol === "https:" ? "https:" : "http:"}//${window.location.hostname || "127.0.0.1"}:5000`);
 const token = localStorage.getItem("token");
 let currentPatientPhone = "";
 
@@ -3327,7 +3330,7 @@ function deletePatient(patientId) {
 
 
 async function getPrediction() {
-    const res = await fetch("http://localhost:5000/appointments/predict_load", {
+    const res = await fetch(BASE_URL + "/appointments/predict_load", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"

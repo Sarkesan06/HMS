@@ -12,6 +12,7 @@ from datetime import datetime
 import google.oauth2.id_token
 from google.auth.transport import requests
 from datetime import datetime, timedelta
+from config import Config
 
 # Assuming you have a User model and db instance imported
 # from app.models import User
@@ -42,7 +43,7 @@ def setup_oauth_routes(auth_bp, User, db):
             if not token:
                 return jsonify({'message': 'No token provided'}), 400
             
-            GOOGLE_CLIENT_ID = '633988002854-tea7qq18oigrdg0kqen1l7ohupoibl04.apps.googleusercontent.com'
+            GOOGLE_CLIENT_ID = Config.GOOGLE_CLIENT_ID
             
             try:
                 # Verify the token with Google

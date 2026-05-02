@@ -39,7 +39,7 @@ def google_login():
         if not token:
             return jsonify({'message': 'No token provided'}), 400
         
-        GOOGLE_CLIENT_ID = '633988002854-tea7qq18oigrdg0kqen1l7ohupoibl04.apps.googleusercontent.com'
+        GOOGLE_CLIENT_ID = Config.GOOGLE_CLIENT_ID
         
         try:
             # Verify Google token
@@ -330,7 +330,7 @@ def send_advanced_recovery_email(email, code, name, recovery_method):
                         <li>This code will expire in 15 minutes</li>
                         <li>Do not share this code with anyone</li>
                         <li>If you didn't request this, your account may be at risk</li>
-                        <li><a href="http://localhost:5000/security-alert.html?email={email}" class="button">🔒 Report Suspicious Activity</a></li>
+                        <li><a href="{Config.FRONTEND_URL}/security-alert.html?email={email}" class="button">🔒 Report Suspicious Activity</a></li>
                     </ul>
                 </div>
             </div>
