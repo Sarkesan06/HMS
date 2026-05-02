@@ -3330,10 +3330,11 @@ function deletePatient(patientId) {
 
 
 async function getPrediction() {
-    const res = await fetch(BASE_URL + "/appointments/predict_load", {
+    const res = await fetch(BASE_URL + "/appointment/predict_load", {
         method: "POST",
         headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
         },
         body: JSON.stringify({
             date: new Date().toISOString().split("T")[0],
@@ -3344,7 +3345,7 @@ async function getPrediction() {
     const data = await res.json();
 
     document.getElementById("predictionValue").innerText =
-        data.predicted_load + "%";
+        (data.capacity_percentage ?? data.predicted_appointments ?? 0) + "%";
 }
 
 function filterPatientTable() {

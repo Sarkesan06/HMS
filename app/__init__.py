@@ -74,6 +74,15 @@ def create_app():
     def serve_index():
         return send_from_directory(frontend_dir_str, "index.html")
 
+    @app.route("/health")
+    def health_check():
+        mongo_uri = app.config.get("MONGO_URI", "")
+        return {
+            "status": "ok",
+            "backend": "running",
+            "mongo_configured": bool(mongo_uri and mongo_uri.startswith(("mongodb://", "mongodb+srv://"))),
+        }
+
     @app.route("/dashboard.html")
     def serve_dashboard():
         return send_from_directory(frontend_dir_str, "dashboard.html")
