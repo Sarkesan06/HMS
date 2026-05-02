@@ -18,6 +18,7 @@ mail = Mail()
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+    app.config["MONGO_DBNAME"] = Config.MONGO_DBNAME
     frontend_dir = Path(app.root_path).parent / "frontend"
     frontend_dir_str = str(frontend_dir)
     
@@ -41,6 +42,10 @@ def create_app():
     # Create index
     with app.app_context():
         try:
+            if mongo.db is None:
+                raise RuntimeError(
+                    "MongoDB database is not configured. Set MONGO_URI to a valid MongoDB connection string and MONGO_DBNAME to your database name, for example: MONGO_DBNAME=HMS"
+                )
             mongo.db.appointments.create_index(
                 [("doctor_id", 1), ("date", 1), ("time", 1)],
                 unique=True
