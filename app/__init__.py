@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, send_from_directory, abort
 from flask_pymongo import PyMongo
 from flask_jwt_extended import JWTManager
 from flask_bcrypt import Bcrypt
@@ -7,6 +7,7 @@ from config import Config
 from flask_mail import Mail
 from datetime import timedelta
 import os
+from pathlib import Path
 
 # Extensions
 mongo = PyMongo()
@@ -17,6 +18,8 @@ mail = Mail()
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+    frontend_dir = Path(app.root_path).parent / "frontend"
+    frontend_dir_str = str(frontend_dir)
     
     # JWT Configuration
     app.config["JWT_SECRET_KEY"] = Config.JWT_SECRET_KEY
@@ -66,5 +69,28 @@ def create_app():
     app.register_blueprint(consultation_bp, url_prefix="/consultation")
     app.register_blueprint(chat_bp, url_prefix="/chat")
     app.register_blueprint(ml_bp, url_prefix="/ml")  
+
+    @app.route("/")
+    def serve_index():
+        return send_from_directory(frontend_dir_str, "index.html")
+
+    @app.route("/dashboard.html")
+    def serve_dashboard():
+        return send_from_directory(frontend_dir_str, "dashboard.html")
+
+    @app.route("/advanced-recovery.html")
+    def serve_advanced_recovery():
+        return send_from_directory(frontend_dir_str, "advanced-recovery.html")
+
+    @app.route("/security-alert.html")
+    def serve_security_alert():
+        return send_from_directory(frontend_dir_str, "security-alert.html")
+
+    @app.route("/<path:filename>")
+    def serve_frontend_assets(filename):
+        file_path = frontend_dir / filename
+        if file_path.exists() and file_path.is_file():
+            return send_from_directory(frontend_dir_str, filename)
+        abort(404)
     
     return app
