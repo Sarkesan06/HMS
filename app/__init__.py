@@ -36,6 +36,7 @@ def create_app():
         cors_origins = [origin.strip() for origin in cors_origins.split(",") if origin.strip()]
     CORS(app, supports_credentials=True, origins=cors_origins)
     mongo.init_app(app)
+    mongo.db = mongo.cx.get_database(Config.MONGO_DBNAME)
     jwt.init_app(app)
     bcrypt.init_app(app)
 
