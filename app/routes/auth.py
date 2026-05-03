@@ -8,13 +8,14 @@ import string
 import hashlib
 import uuid
 from datetime import datetime, timedelta
-from flask import request, jsonify
+from flask import request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import mongo, bcrypt, mail
 from flask_mail import Message
 import re
 from bson.objectid import ObjectId
 from config import Config
+from threading import Thread
 # Add these imports at the top of auth.py
 import google.oauth2.id_token
 from google.auth.transport import requests
@@ -280,14 +281,17 @@ def generate_recovery_code():
 
 def log_security_event(email, event_type, details, ip_address=None, user_agent=None):
     """Log security events for audit trail"""
-    mongo.db.security_logs.insert_one({
-        "email": email,
-        "event_type": event_type,
-        "details": details,
-        "ip_address": ip_address,
-        "user_agent": user_agent,
-        "timestamp": datetime.utcnow()
-    })
+    try:
+        mongo.db.security_logs.insert_one({
+            "email": email,
+            "event_type": event_type,
+            "details": details,
+            "ip_address": ip_address,
+            "user_agent": user_agent,
+            "timestamp": datetime.utcnow()
+        })
+    except Exception as e:
+        print(f"Security log warning: {e}")
 
 def send_advanced_recovery_email(email, code, name, recovery_method):
     """Send advanced recovery email with multiple options"""
@@ -342,25 +346,38 @@ def send_advanced_recovery_email(email, code, name, recovery_method):
     </html>
     """
     
+    def _send():
+        try:
+            msg = Message(
+                subject=subject,
+                recipients=[email],
+                html=html_body,
+                sender=Config.MAIL_DEFAULT_SENDER or Config.MAIL_USERNAME
+            )
+            mail.send(msg)
+            print(f"Recovery email queued/sent to {email}")
+        except Exception as e:
+            print(f"Error sending email: {e}")
+
     try:
-        msg = Message(
-            subject=subject,
-            recipients=[email],
-            html=html_body,
-            sender='sharkroshan@gmail.com'
-        )
-        mail.send(msg)
+        app_obj = current_app._get_current_object()
+        Thread(target=lambda: _send_email_in_app_context(app_obj, _send), daemon=True).start()
         return True
     except Exception as e:
-        print(f"Error sending email: {e}")
+        print(f"Error queueing email: {e}")
         return False
+
+
+def _send_email_in_app_context(app_obj, send_fn):
+    with app_obj.app_context():
+        send_fn()
 
 # ================= 1. INITIATE RECOVERY WITH MULTIPLE METHODS =================
 
 @auth_bp.route("/recovery/initiate-advanced", methods=["POST"])
 def initiate_advanced_recovery():
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
         email = data.get("email")
         ip_address = request.remote_addr
         user_agent = request.headers.get('User-Agent')
@@ -467,7 +484,7 @@ def initiate_advanced_recovery():
 @auth_bp.route("/recovery/verify", methods=["POST"])
 def verify_recovery():
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
         recovery_id = data.get("recovery_id")
         verification_type = data.get("verification_type")  # email, security_questions, backup_code, trusted_device
         verification_data = data.get("verification_data")
@@ -598,7 +615,7 @@ def verify_recovery():
 @auth_bp.route("/recovery/advanced-reset", methods=["POST"])
 def advanced_reset_password():
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
         recovery_id = data.get("recovery_id")
         reset_token = data.get("reset_token")
         new_password = data.get("new_password")
@@ -681,7 +698,7 @@ def advanced_reset_password():
 def setup_security():
     try:
         email = get_jwt_identity()
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
         
         # Setup Security Questions
         if "security_questions" in data:
@@ -752,7 +769,7 @@ def get_recovery_options():
             if user:
                 break
         
-        security_questions = user.get("security_questions", [])
+        security_questions = user.get("security_questions", []) if user else []
         has_backup_codes = mongo.db.backup_codes.find_one({"email": email}) is not None
         trusted_devices = list(mongo.db.trusted_devices.find({"email": email}))
         
