@@ -809,7 +809,12 @@ def send_password_changed_alert(email, ip_address):
     """
     
     try:
-        msg = Message(subject, recipients=[email], body=body)
+        msg = Message(
+            subject=subject,
+            recipients=[email],
+            body=body,
+            sender=Config.MAIL_DEFAULT_SENDER or Config.MAIL_USERNAME
+        )
         mail.send(msg)
     except:
         pass
