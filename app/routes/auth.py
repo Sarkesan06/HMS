@@ -347,37 +347,29 @@ def send_advanced_recovery_email(email, code, name, recovery_method):
     </html>
     """
     
-    def _send():
-        try:
-            from_email = Config.RESEND_FROM_EMAIL or "Hospital Management System <onboarding@resend.dev>"
-            if not Config.RESEND_API_KEY:
-                print("Resend API key is missing; recovery email was not sent")
-                return
+    if not Config.RESEND_API_KEY:
+        print("Resend API key is missing; recovery email was not sent")
+        return False, "Resend API key is missing"
 
-            resend.api_key = Config.RESEND_API_KEY
-            print(f"Recovery email send attempt -> to: {email}, sender: {from_email}")
-            response = resend.Emails.send({
-                "from": from_email,
-                "to": [email],
-                "subject": subject,
-                "html": html_body,
-            })
-            print(f"Recovery email sent via Resend to {email}: {response}")
-        except Exception as e:
-            print(f"Error sending Resend email: {e}")
+    if not Config.RESEND_FROM_EMAIL:
+        print("Resend from address is missing; recovery email was not sent")
+        return False, "Resend from address is missing"
 
     try:
-        app_obj = current_app._get_current_object()
-        Thread(target=lambda: _send_email_in_app_context(app_obj, _send), daemon=True).start()
-        return True
+        resend.api_key = Config.RESEND_API_KEY
+        from_email = Config.RESEND_FROM_EMAIL
+        print(f"Recovery email send attempt -> to: {email}, sender: {from_email}")
+        response = resend.Emails.send({
+            "from": from_email,
+            "to": [email],
+            "subject": subject,
+            "html": html_body,
+        })
+        print(f"Recovery email sent via Resend to {email}: {response}")
+        return True, None
     except Exception as e:
-        print(f"Error queueing email: {e}")
-        return False
-
-
-def _send_email_in_app_context(app_obj, send_fn):
-    with app_obj.app_context():
-        send_fn()
+        print(f"Error sending Resend email: {e}")
+        return False, str(e)
 
 # ================= 1. INITIATE RECOVERY WITH MULTIPLE METHODS =================
 
@@ -468,7 +460,12 @@ def initiate_advanced_recovery():
         })
         
         # Send email with code
-        send_advanced_recovery_email(email, recovery_code, user_name, "Email Verification")
+        email_sent, email_error = send_advanced_recovery_email(email, recovery_code, user_name, "Email Verification")
+        if not email_sent:
+            return jsonify({
+                "success": False,
+                "message": f"Recovery session created, but email could not be sent: {email_error}"
+            }), 500
         
         log_security_event(email, "recovery_initiated", 
                           f"Recovery initiated with methods: {available_methods}",
@@ -817,13 +814,12 @@ def send_password_changed_alert(email, ip_address):
     """
     
     try:
-        if not Config.RESEND_API_KEY:
+        if not Config.RESEND_API_KEY or not Config.RESEND_FROM_EMAIL:
             return
 
-        from_email = Config.RESEND_FROM_EMAIL or "Hospital Management System <onboarding@resend.dev>"
         resend.api_key = Config.RESEND_API_KEY
         resend.Emails.send({
-            "from": from_email,
+            "from": Config.RESEND_FROM_EMAIL,
             "to": [email],
             "subject": subject,
             "text": body,
