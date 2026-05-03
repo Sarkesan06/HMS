@@ -1183,6 +1183,19 @@ def chat():
         
         # Get response
         response = chatbot.get_response(user_message)
+
+        # Store the conversation in MongoDB so Atlas keeps a chat history
+        try:
+            mongo.db.chat_conversations.insert_one({
+                "user_email": current_user_email,
+                "user_role": user_role,
+                "user_message": user_message,
+                "bot_response": response,
+                "created_at": datetime.utcnow(),
+                "source": "chatbot"
+            })
+        except Exception as log_error:
+            print(f"Chat history save warning: {log_error}")
         
         return jsonify({"reply": response}), 200
         

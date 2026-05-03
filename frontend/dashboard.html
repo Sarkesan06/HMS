@@ -3633,7 +3633,7 @@ function sendBookingRequest(doctorId, doctorName, patientId, patientName, patien
         type: consultType
     });
     
-    fetch(BASE_URL + "/appointment/book", {
+    safeFetchJson(BASE_URL + "/appointment/book", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -3651,12 +3651,11 @@ function sendBookingRequest(doctorId, doctorName, patientId, patientName, patien
             type: consultType
         })
     })
-    .then(res => res.json())
-    .then(data => {
+    .then(({ response, data }) => {
         console.log("Response:", data);
         
-        if (data.message) {
-            alert("✅ " + data.message);
+        if (response.ok) {
+            alert("✅ " + (data.message || "Appointment booked successfully"));
             if (data.id) {
                 alert(`🆔 Appointment ID: ${data.id}\n📧 Confirmation sent to: ${patientEmail || "your email"}`);
             }
@@ -3696,7 +3695,7 @@ function makeAppointmentRequest(doctorId, doctorName, patientId, patientName, pa
     
     console.log("Booking with email:", patientEmail);  // Debug log
     
-    fetch(BASE_URL + "/appointment/book", {
+    safeFetchJson(BASE_URL + "/appointment/book", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -3714,10 +3713,9 @@ function makeAppointmentRequest(doctorId, doctorName, patientId, patientName, pa
             type: document.getElementById("consult_type").value
         })
     })
-    .then(res => res.json())
-    .then(data => {
-        if (data.message) {
-            alert("✅ " + data.message);
+    .then(({ response, data }) => {
+        if (response.ok) {
+            alert("✅ " + (data.message || "Appointment booked successfully"));
             if (data.id) {
                 alert(`🆔 Appointment ID: ${data.id}\n📧 Confirmation sent to: ${patientEmail}`);
             }
@@ -3726,7 +3724,9 @@ function makeAppointmentRequest(doctorId, doctorName, patientId, patientName, pa
             document.getElementById("app_time").value = "";
             // Reload appointments
             loadAppointments();
-            loadAppointmentsWithStorage();
+            if (typeof loadAppointmentsWithStorage === 'function') {
+                loadAppointmentsWithStorage();
+            }
         } else if (data.error) {
             alert("❌ " + data.error);
         } else {
