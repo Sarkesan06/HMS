@@ -16,6 +16,7 @@ import re
 from bson.objectid import ObjectId
 from config import Config
 from threading import Thread
+import resend
 # Add these imports at the top of auth.py
 import google.oauth2.id_token
 from google.auth.transport import requests
@@ -348,17 +349,22 @@ def send_advanced_recovery_email(email, code, name, recovery_method):
     
     def _send():
         try:
-            print(f"Recovery email send attempt -> to: {email}, sender: {Config.MAIL_DEFAULT_SENDER or Config.MAIL_USERNAME}")
-            msg = Message(
-                subject=subject,
-                recipients=[email],
-                html=html_body,
-                sender=Config.MAIL_DEFAULT_SENDER or Config.MAIL_USERNAME
-            )
-            mail.send(msg)
-            print(f"Recovery email queued/sent to {email}")
+            from_email = Config.RESEND_FROM_EMAIL or "Hospital Management System <onboarding@resend.dev>"
+            if not Config.RESEND_API_KEY:
+                print("Resend API key is missing; recovery email was not sent")
+                return
+
+            resend.api_key = Config.RESEND_API_KEY
+            print(f"Recovery email send attempt -> to: {email}, sender: {from_email}")
+            response = resend.Emails.send({
+                "from": from_email,
+                "to": [email],
+                "subject": subject,
+                "html": html_body,
+            })
+            print(f"Recovery email sent via Resend to {email}: {response}")
         except Exception as e:
-            print(f"Error sending email: {e}")
+            print(f"Error sending Resend email: {e}")
 
     try:
         app_obj = current_app._get_current_object()
@@ -811,12 +817,16 @@ def send_password_changed_alert(email, ip_address):
     """
     
     try:
-        msg = Message(
-            subject=subject,
-            recipients=[email],
-            body=body,
-            sender=Config.MAIL_DEFAULT_SENDER or Config.MAIL_USERNAME
-        )
-        mail.send(msg)
-    except:
-        pass
+        if not Config.RESEND_API_KEY:
+            return
+
+        from_email = Config.RESEND_FROM_EMAIL or "Hospital Management System <onboarding@resend.dev>"
+        resend.api_key = Config.RESEND_API_KEY
+        resend.Emails.send({
+            "from": from_email,
+            "to": [email],
+            "subject": subject,
+            "text": body,
+        })
+    except Exception as e:
+        print(f"Error sending password change alert: {e}")
