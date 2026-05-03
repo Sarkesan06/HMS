@@ -398,10 +398,7 @@
                     <i class="fas fa-chevron-down" style="position: absolute; right: 12px; color: #999; pointer-events: none;"></i>
                 </div>
             </div>
-            
-            
-            
-            
+
             <button class="btn-login" onclick="register()">
                 <i class="fas fa-user-plus"></i> Register
             </button>
@@ -624,15 +621,6 @@ function register() {
         role: role
     };
     
-    if (role === "patient") {
-        requestData.age = document.getElementById("reg_age").value;
-        requestData.gender = document.getElementById("reg_gender").value;
-        requestData.phone = document.getElementById("reg_phone").value;
-    } else if (role === "doctor") {
-        requestData.specialization = document.getElementById("reg_specialization").value;
-        requestData.available_slots = document.getElementById("reg_slots").value;
-    }
-    
     fetch(BASE_URL + "/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -717,23 +705,6 @@ function checkPasswordMatch() {
     } else {
         matchDiv.innerHTML = "❌ Passwords do not match";
         matchDiv.style.color = "#e63946";
-    }
-}
-
-function toggleRoleFields() {
-    const role = document.getElementById("reg_role").value;
-    const patientFields = document.getElementById("patientFields");
-    const doctorFields = document.getElementById("doctorFields");
-    
-    if (role === "patient") {
-        patientFields.classList.remove("hidden");
-        doctorFields.classList.add("hidden");
-    } else if (role === "doctor") {
-        doctorFields.classList.remove("hidden");
-        patientFields.classList.add("hidden");
-    } else {
-        patientFields.classList.add("hidden");
-        doctorFields.classList.add("hidden");
     }
 }
 
