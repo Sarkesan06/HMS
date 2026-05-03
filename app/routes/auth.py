@@ -348,6 +348,7 @@ def send_advanced_recovery_email(email, code, name, recovery_method):
     
     def _send():
         try:
+            print(f"Recovery email send attempt -> to: {email}, sender: {Config.MAIL_DEFAULT_SENDER or Config.MAIL_USERNAME}")
             msg = Message(
                 subject=subject,
                 recipients=[email],
@@ -414,6 +415,7 @@ def initiate_advanced_recovery():
         
         if not user:
             # Security: Don't reveal if email exists
+            print(f"Recovery requested for unregistered email: {email}")
             return jsonify({
                 "success": True,
                 "message": "If your email is registered, you will receive recovery options",
