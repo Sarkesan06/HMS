@@ -497,8 +497,10 @@ def verify_recovery():
         
         # Method 2: Security Questions
         elif verification_type == "security_questions":
-            questions = verification_data.get("questions", [])
+            questions = (verification_data or {}).get("questions", [])
             user = mongo.db[recovery["collection"]].find_one({"email": email})
+            if not user:
+                return jsonify({"success": False, "message": "User account not found"}), 404
             stored_questions = user.get("security_questions", [])
             
             # Verify answers
@@ -530,7 +532,9 @@ def verify_recovery():
         
         # Method 4: Trusted Device
         elif verification_type == "trusted_device":
-            device_token = verification_data.get("device_token")
+            device_token = (verification_data or {}).get("device_token")
+            if not device_token:
+                return jsonify({"success": False, "message": "Device token is required"}), 400
             trusted = mongo.db.trusted_devices.find_one({
                 "email": email,
                 "device_token": device_token,
@@ -608,6 +612,9 @@ def advanced_reset_password():
         
         if not recovery:
             return jsonify({"success": False, "message": "Invalid recovery session"}), 400
+
+        if not new_password:
+            return jsonify({"success": False, "message": "New password is required"}), 400
         
         # Validate password strength
         if len(new_password) < 8:

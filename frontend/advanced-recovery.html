@@ -366,6 +366,22 @@ let resetToken = null;
 let availableMethods = [];
 let timerInterval = null;
 
+async function parseResponseBody(res) {
+    const text = await res.text();
+    if (!text || !text.trim()) return {};
+    try {
+        return JSON.parse(text.trim());
+    } catch (error) {
+        return { message: text };
+    }
+}
+
+async function safeFetchJson(url, options = {}) {
+    const response = await fetch(url, options);
+    const data = await parseResponseBody(response);
+    return { response, data };
+}
+
 function showAlert(message, type) {
     const alertDiv = document.getElementById("alert");
     alertDiv.className = `alert alert-${type}`;
@@ -417,14 +433,13 @@ function initiateRecovery() {
     button.innerHTML = '<span class="loading"></span> Processing...';
     button.disabled = true;
     
-    fetch(BASE_URL + "/auth/recovery/initiate-advanced", {
+    safeFetchJson(BASE_URL + "/auth/recovery/initiate-advanced", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email })
     })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
+    .then(({ response, data }) => {
+        if (response.ok && data.success) {
             recoveryId = data.recovery_id;
             availableMethods = data.available_methods || ["email"];
             
@@ -433,7 +448,7 @@ function initiateRecovery() {
             showStep(2);
             startTimer(data.expires_in || 900);
         } else {
-            showAlert(data.message, "error");
+            showAlert(data.message || `Request failed with HTTP ${response.status}`, "error");
         }
     })
     .catch(err => {
@@ -522,7 +537,7 @@ function showVerificationForm(method) {
 function verifyWithEmail() {
     const code = document.getElementById("verificationCode").value;
     
-    fetch(BASE_URL + "/auth/recovery/verify", {
+    safeFetchJson(BASE_URL + "/auth/recovery/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -531,15 +546,14 @@ function verifyWithEmail() {
             verification_data: code
         })
     })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
+    .then(({ response, data }) => {
+        if (response.ok && data.success) {
             resetToken = data.reset_token;
             showAlert("Identity verified! Set your new password.", "success");
             showStep(3);
             if (timerInterval) clearInterval(timerInterval);
         } else {
-            showAlert(data.message, "error");
+            showAlert(data.message || `Verification failed with HTTP ${response.status}`, "error");
         }
     })
     .catch(err => showAlert("Verification failed", "error"));
@@ -552,7 +566,7 @@ function verifyWithSecurityQuestions() {
         { question: "What was your first pet's name?", answer: document.getElementById("sq2").value }
     ];
     
-    fetch(BASE_URL + "/auth/recovery/verify", {
+    safeFetchJson(BASE_URL + "/auth/recovery/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -561,14 +575,13 @@ function verifyWithSecurityQuestions() {
             verification_data: { questions: questions }
         })
     })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
+    .then(({ response, data }) => {
+        if (response.ok && data.success) {
             resetToken = data.reset_token;
             showAlert("Identity verified! Set your new password.", "success");
             showStep(3);
         } else {
-            showAlert(data.message, "error");
+            showAlert(data.message || `Verification failed with HTTP ${response.status}`, "error");
         }
     });
 }
@@ -577,7 +590,7 @@ function verifyWithSecurityQuestions() {
 function verifyWithBackupCode() {
     const code = document.getElementById("backupCode").value;
     
-    fetch(BASE_URL + "/auth/recovery/verify", {
+    safeFetchJson(BASE_URL + "/auth/recovery/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -586,14 +599,13 @@ function verifyWithBackupCode() {
             verification_data: code
         })
     })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
+    .then(({ response, data }) => {
+        if (response.ok && data.success) {
             resetToken = data.reset_token;
             showAlert("Identity verified! Set your new password.", "success");
             showStep(3);
         } else {
-            showAlert(data.message, "error");
+            showAlert(data.message || `Verification failed with HTTP ${response.status}`, "error");
         }
     });
 }
@@ -602,7 +614,7 @@ function verifyWithBackupCode() {
 function verifyWithTrustedDevice() {
     const deviceToken = document.getElementById("deviceToken").value;
     
-    fetch(BASE_URL + "/auth/recovery/verify", {
+    safeFetchJson(BASE_URL + "/auth/recovery/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -611,14 +623,13 @@ function verifyWithTrustedDevice() {
             verification_data: { device_token: deviceToken }
         })
     })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
+    .then(({ response, data }) => {
+        if (response.ok && data.success) {
             resetToken = data.reset_token;
             showAlert("Identity verified! Set your new password.", "success");
             showStep(3);
         } else {
-            showAlert(data.message, "error");
+            showAlert(data.message || `Verification failed with HTTP ${response.status}`, "error");
         }
     });
 }
@@ -627,17 +638,18 @@ function verifyWithTrustedDevice() {
 function resendCode() {
     const email = document.getElementById("recoveryEmail").value;
     
-    fetch(BASE_URL + "/auth/recovery/initiate-advanced", {
+    safeFetchJson(BASE_URL + "/auth/recovery/initiate-advanced", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email })
     })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
+    .then(({ response, data }) => {
+        if (response.ok && data.success) {
             recoveryId = data.recovery_id;
             showAlert("New code sent to your email", "success");
             startTimer(data.expires_in || 900);
+        } else {
+            showAlert(data.message || `Request failed with HTTP ${response.status}`, "error");
         }
     });
 }
@@ -758,7 +770,7 @@ function resetPassword() {
     button.innerHTML = '<span class="loading"></span> Resetting...';
     button.disabled = true;
     
-    fetch(BASE_URL + "/auth/recovery/advanced-reset", {
+    safeFetchJson(BASE_URL + "/auth/recovery/advanced-reset", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -767,15 +779,14 @@ function resetPassword() {
             new_password: newPassword
         })
     })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
+    .then(({ response, data }) => {
+        if (response.ok && data.success) {
             showAlert(data.message, "success");
             setTimeout(() => {
                 window.location.href = "index.html";
             }, 3000);
         } else {
-            showAlert(data.message, "error");
+            showAlert(data.message || `Reset failed with HTTP ${response.status}`, "error");
         }
     })
     .catch(err => showAlert("Error resetting password", "error"))
