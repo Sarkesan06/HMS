@@ -477,7 +477,8 @@ def initiate_advanced_recovery():
             "recovery_id": recovery_id,
             "available_methods": available_methods,
             "has_security_questions": len(security_questions) > 0,
-            "expires_in": 900  # 15 minutes in seconds
+            "expires_in": 900,  # 15 minutes in seconds
+            "recipient_email": email
         }), 200
         
     except Exception as e:

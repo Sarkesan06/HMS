@@ -1018,7 +1018,8 @@ def book_appointment():
             "success": True,
             "message": "Appointment booked successfully",
             "id": appointment_id,
-            "email_sent": email_sent if patient_email else False
+            "email_sent": email_sent if patient_email else False,
+            "recipient_email": patient_email or ""
         }), 201
         
     except Exception as e:
