@@ -2513,6 +2513,13 @@ async function safeFetchJson(url, options = {}) {
     return { response, data };
 }
 
+function isAppointmentBookingSuccess(response, data) {
+    if (response && response.ok) return true;
+    if (data && data.id) return true;
+    if (data && typeof data.message === "string" && /booked successfully/i.test(data.message)) return true;
+    return false;
+}
+
 // ================= SESSION CHECK =================
 if(!token){
     alert("Please login first");
@@ -3654,7 +3661,7 @@ function sendBookingRequest(doctorId, doctorName, patientId, patientName, patien
     .then(({ response, data }) => {
         console.log("Response:", data);
         
-        if (response.ok) {
+        if (isAppointmentBookingSuccess(response, data)) {
             alert("✅ " + (data.message || "Appointment booked successfully"));
             if (data.id) {
                 alert(`🆔 Appointment ID: ${data.id}\n📧 Confirmation sent to: ${patientEmail || "your email"}`);
@@ -3714,7 +3721,7 @@ function makeAppointmentRequest(doctorId, doctorName, patientId, patientName, pa
         })
     })
     .then(({ response, data }) => {
-        if (response.ok) {
+        if (isAppointmentBookingSuccess(response, data)) {
             alert("✅ " + (data.message || "Appointment booked successfully"));
             if (data.id) {
                 alert(`🆔 Appointment ID: ${data.id}\n📧 Confirmation sent to: ${patientEmail}`);
