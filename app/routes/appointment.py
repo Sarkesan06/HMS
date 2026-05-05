@@ -7,6 +7,8 @@ from bson.objectid import ObjectId
 from flask_mail import Message
 from app import mail
 from config import Config
+from threading import Thread
+import resend
 
 # Try to import ML models, but don't fail if not available
 try:
@@ -899,19 +901,37 @@ You will receive a reminder email 5 minutes before your appointment.
 Thank you for choosing our hospital!
 """
     
+    def _send():
+        try:
+            if Config.RESEND_API_KEY and Config.RESEND_FROM_EMAIL:
+                resend.api_key = Config.RESEND_API_KEY
+                response = resend.Emails.send({
+                    "from": Config.RESEND_FROM_EMAIL,
+                    "to": [patient_email],
+                    "subject": subject,
+                    "html": html_body,
+                    "text": text_body,
+                })
+                print(f"✅ Booking confirmation email sent via Resend to {patient_email}: {response}")
+                return
+
+            msg = Message(
+                subject=subject,
+                recipients=[patient_email],
+                body=text_body,
+                html=html_body,
+                sender=Config.MAIL_DEFAULT_SENDER or Config.MAIL_USERNAME or "sharkroshan@gmail.com"
+            )
+            mail.send(msg)
+            print(f"✅ Booking confirmation email sent to {patient_email} for appointment {appointment_id}")
+        except Exception as e:
+            print(f"❌ Failed to send booking confirmation: {str(e)}")
+
     try:
-        msg = Message(
-            subject=subject,
-            recipients=[patient_email],
-            body=text_body,
-            html=html_body,
-            sender='sharkroshan@gmail.com'
-        )
-        mail.send(msg)
-        print(f"✅ Booking confirmation email sent to {patient_email} for appointment {appointment_id}")
+        Thread(target=_send, daemon=True).start()
         return True
     except Exception as e:
-        print(f"❌ Failed to send booking confirmation: {str(e)}")
+        print(f"❌ Failed to queue booking confirmation: {str(e)}")
         return False
 
 # ================= BOOK APPOINTMENT =================
