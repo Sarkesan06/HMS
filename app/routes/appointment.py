@@ -799,68 +799,120 @@ def get_doctor_weekly_schedule():
 
 
 
+# ================= CONFIRMATION EMAIL FUNCTION =================
 def send_booking_confirmation_email(patient_email, patient_name, doctor_name, appointment_date, appointment_time, appointment_id, consult_type):
     """Send booking confirmation email with appointment ID"""
     
-    # ... existing code ...
+    if not patient_email:
+        print("❌ No patient email provided")
+        return False
     
-    if consult_type == "online":
-        video_link = f"https://meet.jit.si/HMS_{appointment_id}"
-        
-        html_body = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <style>
-                /* ... existing styles ... */
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h2>🏥 Hospital Management System</h2>
-                    <p>Online Video Consultation Link</p>
+    # Format date for better display
+    try:
+        date_obj = datetime.strptime(appointment_date, '%Y-%m-%d')
+        formatted_date = date_obj.strftime('%A, %B %d, %Y')
+    except:
+        formatted_date = appointment_date
+    
+    subject = "✅ Appointment Confirmation - Hospital Management System"
+    
+    # Create HTML email body
+    html_body = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+            .header {{ background: linear-gradient(135deg, #1d3557, #457b9d); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }}
+            .content {{ background: #f8f9fa; padding: 20px; border-radius: 0 0 10px 10px; }}
+            .appointment-details {{ background: white; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #2a9d8f; }}
+            .appointment-id {{ background: #e9ecef; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 18px; font-weight: bold; text-align: center; margin: 10px 0; }}
+            .footer {{ text-align: center; font-size: 12px; color: #666; margin-top: 20px; padding-top: 10px; border-top: 1px solid #ddd; }}
+            .button {{ background: #2a9d8f; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h2>🏥 Hospital Management System</h2>
+                <p>Appointment Confirmation</p>
+            </div>
+            <div class="content">
+                <p>Dear <strong>{patient_name}</strong>,</p>
+                
+                <p>Your appointment has been successfully booked! Please find the details below:</p>
+                
+                <div class="appointment-details">
+                    <h3 style="margin: 0 0 10px 0; color: #1d3557;">📋 Appointment Details:</h3>
+                    <p><strong>🆔 Appointment ID:</strong></p>
+                    <div class="appointment-id">{appointment_id}</div>
+                    <p><strong>👨‍⚕️ Doctor:</strong> Dr. {doctor_name}<br>
+                    <strong>📅 Date:</strong> {formatted_date}<br>
+                    <strong>🕐 Time:</strong> {appointment_time}<br>
+                    <strong>🎥 Consultation Type:</strong> {"🎥 Video Consultation" if consult_type == "online" else "🏥 Hospital Visit"}</p>
                 </div>
-                <div class="content">
-                    <p>Dear <strong>{patient_name}</strong>,</p>
-                    
-                    <p>Your online video consultation has been scheduled. You can join using the link below:</p>
-                    
-                    <div class="appointment-details">
-                        <h3>📋 Appointment Details:</h3>
-                        <p><strong>🆔 Appointment ID:</strong> {appointment_id}</p>
-                        <p><strong>👨‍⚕️ Doctor:</strong> Dr. {doctor_name}</p>
-                        <p><strong>📅 Date:</strong> {formatted_date}</p>
-                        <p><strong>🕐 Time:</strong> {appointment_time}</p>
-                    </div>
-                    
-                    <div style="text-align: center; margin: 20px 0;">
-                        <a href="{video_link}" class="button" style="background: #2a9d8f; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
-                            🎥 Join Video Consultation
-                        </a>
-                    </div>
-                    
-                    <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 15px 0;">
-                        <strong>📌 Important:</strong>
-                        <ul style="margin: 10px 0 0 20px;">
-                            <li>This link works from ANY network (Wi-Fi, mobile data, different cities/countries)</li>
-                            <li>No account or software installation required</li>
-                            <li>Works on desktop, laptop, tablet, and mobile phones</li>
-                            <li>Please join 5 minutes before your scheduled time</li>
-                            <li>Ensure you have a stable internet connection</li>
-                            <li>Allow camera and microphone access when prompted</li>
-                        </ul>
-                    </div>
-                    
-                    <div class="footer">
-                        <p>© 2024 Hospital Management System | All Rights Reserved</p>
-                        <p>Video consultation powered by Jitsi Meet - Works across any network</p>
-                    </div>
+                
+                {"<div style='background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 15px 0;'><strong>📌 For Video Consultation:</strong><br>Use the Appointment ID above to join the call from the Consultation page.<br><br><a href='https://meet.jit.si/HMS_" + appointment_id + "' class='button'>🎥 Join Video Call</a></div>" if consult_type == "online" else ""}
+                
+                <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                    <strong>⚠️ Important Notes:</strong>
+                    <ul style="margin: 10px 0 0 20px;">
+                        <li>You will receive a reminder email 5 minutes before your appointment</li>
+                        <li>Please arrive 10 minutes early for in-person consultations</li>
+                        <li>For video consultations, ensure stable internet connection</li>
+                        <li>Keep your Appointment ID handy for reference</li>
+                    </ul>
+                </div>
+                
+                <div style="text-align: center; margin-top: 20px;">
+                    <a href="{Config.FRONTEND_URL}" class="button">📅 View My Appointments</a>
                 </div>
             </div>
-        </body>
-        </html>
-        """
+            <div class="footer">
+                <p>© 2024 Hospital Management System | All Rights Reserved</p>
+                <p>This is an automated confirmation, please do not reply.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    # Plain text fallback
+    text_body = f"""
+Hospital Management System - Appointment Confirmation
+
+Dear {patient_name},
+
+Your appointment has been successfully booked!
+
+Appointment Details:
+🆔 Appointment ID: {appointment_id}
+👨‍⚕️ Doctor: Dr. {doctor_name}
+📅 Date: {formatted_date}
+🕐 Time: {appointment_time}
+🎥 Type: {"Video Consultation" if consult_type == "online" else "Hospital Visit"}
+
+{"For Video Consultation, use this link: https://meet.jit.si/HMS_" + appointment_id if consult_type == "online" else ""}
+
+You will receive a reminder email 5 minutes before your appointment.
+
+Thank you for choosing our hospital!
+"""
+    
+    try:
+        response = send_transactional_email(
+            to_email=patient_email,
+            subject=subject,
+            text_body=text_body,
+            html_body=html_body,
+        )
+        print(f"✅ Booking confirmation email sent via SendGrid to {patient_email}: {response.status_code}")
+        return True
+    except Exception as e:
+        print(f"❌ Failed to send booking confirmation: {str(e)}")
+        return False
+
 # ================= BOOK APPOINTMENT =================
 @appointment_bp.route("/book", methods=["POST"])
 def book_appointment():
