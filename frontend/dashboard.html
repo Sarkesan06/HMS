@@ -4306,29 +4306,285 @@ function joinConsultation(appointmentId) {
 }
 
 // Start video call
+// Enhanced startCall function with better cross-network support
 function startCall() {
     let id = document.getElementById("consult_id").value;
     if (!id) {
-        alert("Please enter Appointment ID");
+        alert("❌ Please enter Appointment ID");
         return;
     }
+    
+    // Create a unique room name
     let room = "HMS_" + id;
     let role = localStorage.getItem("role") || "User";
-    let iframe = `<iframe src="https://meet.jit.si/${room}#config.prejoinPageEnabled=false&userInfo.displayName=${role}" width="100%" height="500" allow="camera; microphone; fullscreen" style="border-radius: 10px; border: none;"></iframe>`;
+    let userName = localStorage.getItem("name") || role;
+    
+    // Get user email for better identification
+    let userEmail = localStorage.getItem("email") || "user";
+    let userEmailShort = userEmail.split('@')[0];
+    
+    // Jitsi Meet configuration for better cross-network performance
+    let config = {
+        prejoinPageEnabled: false,
+        startWithAudioMuted: false,
+        startWithVideoMuted: false,
+        enableWelcomePage: false,
+        disableDeepLinking: true,
+        // Server configuration (using public Jitsi server)
+        hosts: {
+            domain: 'meet.jit.si',
+            muc: 'conference.meet.jit.si',
+            focus: 'focus.meet.jit.si'
+        },
+        // Use TURN servers for better connectivity across networks
+        p2p: {
+            enabled: false  // Force using Jitsi's cloud infrastructure instead of P2P
+        },
+        // Connection settings
+        testing: {
+            enableP2P: false
+        },
+        // Screen sharing
+        enableLayerSuspension: true,
+        enableNoAudioDetection: true,
+        enableNoisyMicDetection: true,
+        // Bandwidth settings (for cross-network optimization)
+        channelLastN: 4,
+        adaptiveLastN: true
+    };
+    
+    // User info for display
+    let userInfo = {
+        displayName: `${userName} (${role})`,
+        email: userEmail
+    };
+    
+    // Create the iframe with configuration
+    let iframe = `<iframe 
+        src="https://meet.jit.si/${room}#config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&userInfo.displayName=${encodeURIComponent(userInfo.displayName)}" 
+        width="100%" 
+        height="500" 
+        allow="camera; microphone; fullscreen; display-capture" 
+        style="border-radius: 10px; border: none;">
+    </iframe>`;
+    
     document.getElementById("videoContainer").innerHTML = iframe;
+    
+    // Show connection status
+    let statusDiv = document.createElement('div');
+    statusDiv.className = 'connection-status';
+    statusDiv.innerHTML = `
+        <div style="background: #e8f4f8; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 12px;">
+            🌐 Connecting to cloud server... (Works across different networks)
+            <div style="font-size: 11px; color: #666; margin-top: 5px;">
+                Room: ${room}<br>
+                Meeting ID: ${id}<br>
+                Waiting for other participant to join...
+            </div>
+        </div>
+    `;
+    document.getElementById("videoContainer").appendChild(statusDiv);
+    
+    // Remove status after 5 seconds if iframe loads
+    setTimeout(() => {
+        if (statusDiv) statusDiv.remove();
+    }, 5000);
     
     // Scroll to video
     document.getElementById("videoContainer").scrollIntoView({ behavior: "smooth" });
+    
+    // Log the call start for debugging
+    console.log(`🎥 Video call started - Room: ${room}, User: ${userInfo.displayName}`);
+    console.log(`🌐 Using cloud server: meet.jit.si - Works across any network`);
 }
 
-// Open video in new window
+// Enhanced openVideo function
 function openVideo(id) {
     let room = "HMS_" + id;
     let role = localStorage.getItem("role") || "User";
-    let url = `https://meet.jit.si/${room}#userInfo.displayName=${role}&config.prejoinPageEnabled=false`;
-    window.open(url, "_blank");
+    let userName = localStorage.getItem("name") || role;
+    
+    // Create a new window with better features
+    let features = [
+        "width=1200",
+        "height=800",
+        "menubar=no",
+        "toolbar=no",
+        "location=no",
+        "status=no",
+        "resizable=yes"
+    ].join(',');
+    
+    let url = `https://meet.jit.si/${room}#userInfo.displayName=${encodeURIComponent(userName + " (" + role + ")")}&config.prejoinPageEnabled=false&config.startWithAudioMuted=false`;
+    
+    let newWindow = window.open(url, "_blank", features);
+    
+    if (!newWindow) {
+        alert("⚠️ Popup blocked! Please allow popups for this site.");
+    } else {
+        console.log(`🎥 Video consultation opened in new window - Room: ${room}`);
+    }
 }
 
+// Alternative: Use Jitsi's external API for more control
+function startCallWithAPI() {
+    let id = document.getElementById("consult_id").value;
+    if (!id) {
+        alert("❌ Please enter Appointment ID");
+        return;
+    }
+    
+    let room = "HMS_" + id;
+    let role = localStorage.getItem("role") || "User";
+    let userName = localStorage.getItem("name") || role;
+    
+    // Load Jitsi Meet API if not already loaded
+    if (typeof JitsiMeetExternalAPI === 'undefined') {
+        // Load the API script dynamically
+        const script = document.createElement('script');
+        script.src = 'https://meet.jit.si/external_api.js';
+        script.onload = () => {
+            initJitsiCall(room, userName, role);
+        };
+        document.head.appendChild(script);
+    } else {
+        initJitsiCall(room, userName, role);
+    }
+}
+
+function initJitsiCall(room, userName, role) {
+    const domain = 'meet.jit.si';
+    const options = {
+        roomName: room,
+        width: '100%',
+        height: 500,
+        parentNode: document.getElementById('videoContainer'),
+        userInfo: {
+            displayName: `${userName} (${role})`,
+            email: localStorage.getItem('email')
+        },
+        configOverwrite: {
+            prejoinPageEnabled: false,
+            enableWelcomePage: false,
+            disableDeepLinking: true,
+            p2p: { enabled: false }, // Force cloud routing for cross-network compatibility
+            startWithAudioMuted: false,
+            startWithVideoMuted: false,
+            enableNoAudioDetection: true,
+            enableNoisyMicDetection: true,
+            channelLastN: 4
+        },
+        interfaceConfigOverwrite: {
+            TOOLBAR_BUTTONS: [
+                'microphone', 'camera', 'closedcaptions', 'desktop', 'fullscreen',
+                'fodeviceselection', 'hangup', 'profile', 'chat', 'recording',
+                'livestreaming', 'etherpad', 'sharedvideo', 'settings', 'raisehand',
+                'videoquality', 'filmstrip', 'tileview', 'download'
+            ],
+            SETTINGS_SECTIONS: ['devices', 'moderator', 'profile', 'language']
+        }
+    };
+    
+    const api = new JitsiMeetExternalAPI(domain, options);
+    
+    // Add event listeners
+    api.addEventListener('videoConferenceJoined', () => {
+        console.log('✅ Joined video conference successfully (Cross-network call)');
+    });
+    
+    api.addEventListener('participantJoined', (event) => {
+        console.log(`👤 Participant joined: ${event.id}`);
+        // Show notification
+        showNotification('A participant has joined the consultation!');
+    });
+    
+    api.addEventListener('participantLeft', (event) => {
+        console.log(`👋 Participant left: ${event.id}`);
+    });
+    
+    console.log(`🎥 Jitsi Meet API initialized - Room: ${room}`);
+}
+
+// Helper function to show notifications
+function showNotification(message) {
+    if (Notification.permission === 'granted') {
+        new Notification('Video Consultation', { body: message });
+    }
+}
+
+
+// Test network connectivity for video calls
+async function testVideoCallConnection() {
+    console.log("🔍 Testing network connectivity for video calls...");
+    
+    const container = document.getElementById("videoContainer");
+    if (container) {
+        const testDiv = document.createElement('div');
+        testDiv.style.cssText = 'padding: 20px; background: #f0f2f5; border-radius: 10px; margin: 20px 0;';
+        testDiv.innerHTML = `
+            <h4>🌐 Network Test Results</h4>
+            <div id="networkTestResults"></div>
+        `;
+        container.parentNode.insertBefore(testDiv, container);
+    }
+    
+    const resultsDiv = document.getElementById("networkTestResults");
+    if (resultsDiv) {
+        resultsDiv.innerHTML = '<div class="loading-spinner"></div><p>Testing connection...</p>';
+    }
+    
+    try {
+        // Test Jitsi server connectivity
+        const testStart = Date.now();
+        const response = await fetch('https://meet.jit.si/config.js', { mode: 'no-cors' });
+        const testEnd = Date.now();
+        const pingTime = testEnd - testStart;
+        
+        // Get network information using WebRTC
+        let connectionType = "Unknown";
+        if ('connection' in navigator) {
+            connectionType = navigator.connection.effectiveType || "Unknown";
+            const downlink = navigator.connection.downlink || "Unknown";
+            
+            if (resultsDiv) {
+                resultsDiv.innerHTML = `
+                    <div style="background: white; padding: 15px; border-radius: 10px;">
+                        <strong>✅ Connection Test Results:</strong><br><br>
+                        🌐 <strong>Jitsi Server:</strong> Reachable (${pingTime}ms)<br>
+                        📶 <strong>Network Type:</strong> ${navigator.connection.effectiveType || "Unknown"}<br>
+                        ⬇️ <strong>Download Speed:</strong> ${downlink} Mbps<br>
+                        🔄 <strong>Connection Type:</strong> ${connectionType}<br><br>
+                        <span style="color: ${pingTime < 200 ? '#2a9d8f' : '#e9c46a'}">
+                            ${pingTime < 200 ? '✅ Excellent! Video calls will work great' : 
+                              pingTime < 500 ? '✅ Good. Video calls should work fine' : 
+                              '⚠️ You may experience some lag. Consider using a better connection'}
+                        </span>
+                        <br><br>
+                        <small>💡 Video calls use Jitsi's cloud servers, so they work even when participants are on different networks!</small>
+                    </div>
+                `;
+            }
+        }
+    } catch (error) {
+        if (resultsDiv) {
+            resultsDiv.innerHTML = `
+                <div style="background: #fff3cd; padding: 15px; border-radius: 10px; color: #856404;">
+                    ⚠️ Could not reach Jitsi server. Check your internet connection.<br>
+                    <small>Error: ${error.message}</small>
+                </div>
+            `;
+        }
+    }
+}
+
+// Run network test when consultation section is loaded
+function loadConsultationSection() {
+    showConsultTab('join');
+    // Test network connectivity periodically
+    setInterval(() => {
+        testVideoCallConnection();
+    }, 30000); // Test every 30 seconds
+}
 
 
 

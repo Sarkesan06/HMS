@@ -14,8 +14,8 @@ class Config:
     MAIL_USERNAME = os.getenv("MAIL_USERNAME", "sharkroshan@gmail.com")
     MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "hlbf hqus gplx wryc")
     MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER", MAIL_USERNAME)
-    RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
-    RESEND_FROM_EMAIL = os.getenv("RESEND_FROM_EMAIL", "")
+    SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY", "")
+    SENDGRID_FROM_EMAIL = os.getenv("SENDGRID_FROM_EMAIL", "")
 
     FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5500")
     BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:5000")

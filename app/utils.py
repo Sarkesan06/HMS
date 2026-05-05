@@ -8,6 +8,7 @@ from config import Config
 from functools import wraps
 from flask import jsonify
 from flask_jwt_extended import get_jwt_identity, verify_jwt_in_request
+from app.mail_service import send_transactional_email
 
 # ================= EXTENSIONS =================
 mongo = PyMongo()
@@ -109,12 +110,7 @@ def get_current_user_role():
 # ================= SEND EMAIL =================
 def send_email(to_email, subject, body):
     try:
-        msg = Message(
-            subject=subject,
-            recipients=[to_email],
-            body=body
-        )
-        mail.send(msg)
+        send_transactional_email(to_email=to_email, subject=subject, text_body=body)
         return True
     except Exception as e:
         print("Email Error:", e)

@@ -11,12 +11,10 @@ from datetime import datetime, timedelta
 from flask import request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import mongo, bcrypt, mail
-from flask_mail import Message
 import re
 from bson.objectid import ObjectId
 from config import Config
-from threading import Thread
-import resend
+from app.mail_service import send_transactional_email
 # Add these imports at the top of auth.py
 import google.oauth2.id_token
 from google.auth.transport import requests
@@ -347,28 +345,18 @@ def send_advanced_recovery_email(email, code, name, recovery_method):
     </html>
     """
     
-    if not Config.RESEND_API_KEY:
-        print("Resend API key is missing; recovery email was not sent")
-        return False, "Resend API key is missing"
-
-    if not Config.RESEND_FROM_EMAIL:
-        print("Resend from address is missing; recovery email was not sent")
-        return False, "Resend from address is missing"
-
     try:
-        resend.api_key = Config.RESEND_API_KEY
-        from_email = Config.RESEND_FROM_EMAIL
-        print(f"Recovery email send attempt -> to: {email}, sender: {from_email}")
-        response = resend.Emails.send({
-            "from": from_email,
-            "to": [email],
-            "subject": subject,
-            "html": html_body,
-        })
-        print(f"Recovery email sent via Resend to {email}: {response}")
+        print(f"Recovery email send attempt -> to: {email}, sender: {Config.SENDGRID_FROM_EMAIL}")
+        response = send_transactional_email(
+            to_email=email,
+            subject=subject,
+            text_body=f"Your recovery code is {code}",
+            html_body=html_body,
+        )
+        print(f"Recovery email sent via SendGrid to {email}: {response.status_code}")
         return True, None
     except Exception as e:
-        print(f"Error sending Resend email: {e}")
+        print(f"Error sending SendGrid email: {e}")
         return False, str(e)
 
 # ================= 1. INITIATE RECOVERY WITH MULTIPLE METHODS =================
@@ -815,15 +803,11 @@ def send_password_changed_alert(email, ip_address):
     """
     
     try:
-        if not Config.RESEND_API_KEY or not Config.RESEND_FROM_EMAIL:
-            return
-
-        resend.api_key = Config.RESEND_API_KEY
-        resend.Emails.send({
-            "from": Config.RESEND_FROM_EMAIL,
-            "to": [email],
-            "subject": subject,
-            "text": body,
-        })
+        response = send_transactional_email(
+            to_email=email,
+            subject=subject,
+            text_body=body,
+        )
+        print(f"Password change alert sent via SendGrid to {email}: {response.status_code}")
     except Exception as e:
         print(f"Error sending password change alert: {e}")

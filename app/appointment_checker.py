@@ -168,4 +168,8 @@ def check_and_send_reminders():
     except Exception as e:
         print(f"❌ Error in check_and_send_reminders: {str(e)}")
         import traceback
+<<<<<<< ours
         traceback.print_exc()
+=======
+        traceback.print_exc()
+>>>>>>> theirs
