@@ -995,6 +995,7 @@ def book_appointment():
         print("=" * 50)
         
         return jsonify({
+            "success": True,
             "message": "Appointment booked successfully",
             "id": appointment_id,
             "email_sent": email_sent if patient_email else False
