@@ -422,12 +422,12 @@ def initiate_advanced_recovery():
         })
         
         # Send recovery code via email
-        email_sent, email_error = send_advanced_recovery_email(email, recovery_code, user_name, "Email Verification")
+        email_sent = send_advanced_recovery_email(email, recovery_code, user_name, "Email Verification")
         if not email_sent:
-            print(f"Recovery email failed for {email}: {email_error}")
+            print(f"Recovery email failed for {email}")
             return jsonify({
                 "success": False,
-                "message": "Recovery session created, but email could not be sent. Please try again."
+                "message": "Recovery email could not be sent. Please verify mail configuration and try again."
             }), 500
 
         return jsonify({
