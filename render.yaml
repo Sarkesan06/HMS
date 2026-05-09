@@ -18,6 +18,7 @@ services:
         sync: false
       - key: MONGO_DBNAME
         value: HMS
+      # Gmail SMTP Configuration (No SendGrid needed)
       - key: MAIL_SERVER
         value: smtp.gmail.com
       - key: MAIL_PORT
@@ -25,13 +26,11 @@ services:
       - key: MAIL_USE_TLS
         value: true
       - key: MAIL_USERNAME
-        sync: false
+        value: sharkroshan@gmail.com
       - key: MAIL_PASSWORD
-        sync: false
-      - key: SENDGRID_API_KEY
-        sync: false
-      - key: SENDGRID_FROM_EMAIL
-        sync: false
+        sync: false  # Add your app password in Render dashboard
+      - key: MAIL_DEFAULT_SENDER
+        value: sharkroshan@gmail.com
       - key: FRONTEND_URL
         sync: false
       - key: BACKEND_URL

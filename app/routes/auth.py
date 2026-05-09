@@ -292,11 +292,14 @@ def log_security_event(email, event_type, details, ip_address=None, user_agent=N
     except Exception as e:
         print(f"Security log warning: {e}")
 
-# In app/routes/auth.py
-from app.email_utils import send_email
+# In app/routes/auth.py - Remove or comment out SendGrid imports
+# from app.mail_service import send_transactional_email  <- Remove this
 
+from app.email_utils import send_email  # Use this instead
+
+# Then update the send_advanced_recovery_email function:
 def send_advanced_recovery_email(email, code, name, recovery_method):
-    """Send recovery email using the configured email service"""
+    """Send recovery email using Gmail SMTP"""
     
     subject = f"🔐 Account Recovery Code - Hospital Management System"
     
@@ -308,30 +311,21 @@ def send_advanced_recovery_email(email, code, name, recovery_method):
             body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
             .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
             .header {{ background: linear-gradient(135deg, #1d3557, #457b9d); color: white; padding: 20px; text-align: center; }}
-            .content {{ background: #f8f9fa; padding: 20px; }}
             .code {{ background: #e9ecef; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; border-radius: 10px; margin: 20px 0; }}
-            .warning {{ background: #fff3cd; border: 1px solid #ffc107; padding: 10px; border-radius: 5px; margin: 15px 0; }}
         </style>
     </head>
     <body>
         <div class="container">
             <div class="header">
                 <h2>🏥 Hospital Management System</h2>
-                <p>Account Recovery Verification</p>
+                <p>Account Recovery</p>
             </div>
             <div class="content">
                 <p>Dear <strong>{name}</strong>,</p>
-                <p>We received a request to recover your account.</p>
+                <p>Your account recovery code is:</p>
                 <div class="code">{code}</div>
-                <div class="warning">
-                    <strong>⚠️ Important:</strong>
-                    <ul>
-                        <li>This code expires in 15 minutes</li>
-                        <li>Do not share this code with anyone</li>
-                        <li>If you didn't request this, ignore this email</li>
-                    </ul>
-                </div>
-                <p>Thank you,<br>Hospital Management System</p>
+                <p>This code expires in 15 minutes.</p>
+                <p>If you didn't request this, please ignore this email.</p>
             </div>
         </div>
     </body>
@@ -345,7 +339,7 @@ Dear {name},
 
 Your account recovery code is: {code}
 
-This code will expire in 15 minutes.
+This code expires in 15 minutes.
 
 If you didn't request this, please ignore this email.
 
