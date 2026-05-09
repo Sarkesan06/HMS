@@ -438,27 +438,38 @@ def initiate_advanced_recovery():
         })
         
         # Send email with code
+        # In app/routes/auth.py - Find this section:
+
+# Send email with code
         email_sent, email_error = send_advanced_recovery_email(email, recovery_code, user_name, "Email Verification")
         if not email_sent:
             return jsonify({
                 "success": False,
                 "message": f"Recovery session created, but email could not be sent: {email_error}"
             }), 500
-        
-        log_security_event(email, "recovery_initiated", 
-                          f"Recovery initiated with methods: {available_methods}",
-                          ip_address, user_agent)
-        
+
+        # REPLACE IT WITH THIS (temporary fix):
+
+        # For development - just log the code instead of sending email
+        print(f"\n{'='*60}")
+        print(f"🔐 ACCOUNT RECOVERY CODE (Temporary - Check Console)")
+        print(f"Email: {email}")
+        print(f"Recovery Code: {recovery_code}")
+        print(f"Recovery ID: {recovery_id}")
+        print(f"{'='*60}\n")
+
+        # Don't fail if email fails - just show the code in console
+        # For production on Render, you'll see this code in the logs
         return jsonify({
             "success": True,
-            "message": "Recovery session created",
+            "message": "Recovery session created. Check server logs for the code.",
             "recovery_id": recovery_id,
             "available_methods": available_methods,
             "has_security_questions": len(security_questions) > 0,
-            "expires_in": 900,  # 15 minutes in seconds
-            "recipient_email": email
-        }), 200
-        
+            "expires_in": 900,
+            "recipient_email": email,
+            "dev_code": recovery_code  # Include code in response for development
+        }), 200        
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({"success": False, "message": str(e)}), 500

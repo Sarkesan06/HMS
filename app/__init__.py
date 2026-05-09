@@ -8,6 +8,12 @@ from flask_mail import Mail
 from datetime import timedelta
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+load_dotenv()  # Load environment variables from .env file
+
+# Rest of your imports...
+from flask import Flask, send_from_directory, abort
+from flask_pymongo import PyMongo
 
 # Extensions
 mongo = PyMongo()

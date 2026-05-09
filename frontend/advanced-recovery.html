@@ -739,6 +739,60 @@ function checkPasswordMatch() {
     }
 }
 
+// In advanced-recovery.html, find the initiateRecovery function
+// Add this after receiving the response:
+
+function initiateRecovery() {
+    const email = document.getElementById("recoveryEmail").value.trim();
+    
+    if (!email) {
+        showAlert("Please enter your email address", "error");
+        return;
+    }
+    
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<span class="loading"></span> Processing...';
+    button.disabled = true;
+    
+    safeFetchJson(BASE_URL + "/auth/recovery/initiate-advanced", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email })
+    })
+    .then(({ response, data }) => {
+        if (response.ok && data.success) {
+            recoveryId = data.recovery_id;
+            availableMethods = data.available_methods || ["email"];
+            
+            // NEW: Check if dev_code is provided (development mode)
+            if (data.dev_code) {
+                showAlert(`🔐 DEVELOPMENT MODE\nYour recovery code is: ${data.dev_code}\n\n(Check server logs or use this code)`, "info");
+                // Auto-fill the verification code input if it exists
+                setTimeout(() => {
+                    const codeInput = document.getElementById("verificationCode");
+                    if (codeInput) codeInput.value = data.dev_code;
+                }, 500);
+            } else {
+                showAlert(data.message || "Recovery session created", "success");
+            }
+            
+            showVerificationMethods(availableMethods);
+            showStep(2);
+            startTimer(data.expires_in || 900);
+        } else {
+            showAlert(data.message || `Request failed with HTTP ${response.status}`, "error");
+        }
+    })
+    .catch(err => {
+        showAlert("Network error. Please try again.", "error");
+    })
+    .finally(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
 // Reset Password
 function resetPassword() {
     const newPassword = document.getElementById("newPassword").value;
