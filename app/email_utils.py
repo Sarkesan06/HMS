@@ -1,48 +1,40 @@
-# app/email_utils.py - Complete replacement
 from flask_mail import Message
 from app import mail
 from config import Config
 
+
 def send_email(to_email, subject, text_body, html_body=None):
-    """
-    Send email using Gmail SMTP only
-    No SendGrid dependencies
-    """
-    
+    """Send email using SMTP only (no Resend)."""
+
     if not to_email or '@' not in to_email:
-        print(f"⚠️ Invalid email address: {to_email}")
+        print(f"Invalid email address: {to_email}")
         return False
-    
-    # Check if email is configured
-    if not Config.MAIL_PASSWORD:
-        print(f"⚠️ Email not configured. MAIL_PASSWORD is missing in environment variables")
-        print(f"📧 Would have sent to: {to_email}")
-        print(f"   Subject: {subject}")
-        print(f"   Body: {text_body[:200]}...")
+
+    if not Config.MAIL_USERNAME or not Config.MAIL_PASSWORD:
+        print("Email not configured: MAIL_USERNAME or MAIL_PASSWORD is missing")
         return False
-    
+
     try:
         msg = Message(
             subject=subject,
             recipients=[to_email],
             body=text_body,
             html=html_body,
-            sender=Config.MAIL_DEFAULT_SENDER or Config.MAIL_USERNAME
+            sender=Config.MAIL_DEFAULT_SENDER or Config.MAIL_USERNAME,
         )
         mail.send(msg)
-        print(f"✅ Email sent successfully to {to_email}")
+        print(f"Email sent successfully via SMTP to {to_email}")
         return True
-        
     except Exception as e:
-        print(f"❌ Email error: {str(e)}")
+        print(f"SMTP email error: {str(e)}")
         return False
 
 
 def send_recovery_email(email, code, name):
     """Simplified recovery email function"""
-    
-    subject = "🔐 Account Recovery - Hospital Management System"
-    
+
+    subject = "Account Recovery - Hospital Management System"
+
     html_body = f"""
     <!DOCTYPE html>
     <html>
@@ -58,7 +50,7 @@ def send_recovery_email(email, code, name):
     <body>
         <div class="container">
             <div class="header">
-                <h2>🏥 Hospital Management System</h2>
+                <h2>Hospital Management System</h2>
                 <p>Account Recovery</p>
             </div>
             <div class="content">
@@ -69,13 +61,13 @@ def send_recovery_email(email, code, name):
                 <p>If you didn't request this, please ignore this email.</p>
             </div>
             <div class="footer">
-                <p>© 2024 Hospital Management System</p>
+                <p>Hospital Management System</p>
             </div>
         </div>
     </body>
     </html>
     """
-    
+
     text_body = f"""
 Hospital Management System - Account Recovery
 
@@ -90,5 +82,5 @@ If you didn't request this, please ignore this email.
 Thank you,
 Hospital Management System
 """
-    
+
     return send_email(email, subject, text_body, html_body)
