@@ -420,6 +420,9 @@ def initiate_advanced_recovery():
         if trusted_device:
             available_methods.append("trusted_device")
         
+        # Send code to dedicated recovery email when configured
+        recipient_email = (user.get("recovery_email") or email).strip()
+
         # Create recovery session
         recovery_id = str(uuid.uuid4())
         recovery_code = generate_recovery_code()
@@ -427,6 +430,7 @@ def initiate_advanced_recovery():
         mongo.db.recovery_attempts.insert_one({
             "recovery_id": recovery_id,
             "email": email,
+            "recipient_email": recipient_email,
             "collection": user_collection,
             "code": recovery_code,
             "available_methods": available_methods,
@@ -443,16 +447,16 @@ def initiate_advanced_recovery():
         email_mode = Config.RECOVERY_EMAIL_MODE
         if email_mode == "sync":
             try:
-                email_sent = send_advanced_recovery_email(email, recovery_code, user_name, "Email Verification")
+                email_sent = send_advanced_recovery_email(recipient_email, recovery_code, user_name, "Email Verification")
                 if not email_sent:
-                    print(f"RECOVERY FALLBACK CODE for {email}: {recovery_code} (recovery_id={recovery_id})")
+                    print(f"RECOVERY FALLBACK CODE for {recipient_email}: {recovery_code} (recovery_id={recovery_id})")
             except Exception as email_exception:
-                print(f"Recovery email exception for {email}: {email_exception}")
-                print(f"RECOVERY FALLBACK CODE for {email}: {recovery_code} (recovery_id={recovery_id})")
+                print(f"Recovery email exception for {recipient_email}: {email_exception}")
+                print(f"RECOVERY FALLBACK CODE for {recipient_email}: {recovery_code} (recovery_id={recovery_id})")
         elif email_mode == "disabled":
-            print(f"RECOVERY EMAIL DISABLED. CODE for {email}: {recovery_code} (recovery_id={recovery_id})")
+            print(f"RECOVERY EMAIL DISABLED. CODE for {recipient_email}: {recovery_code} (recovery_id={recovery_id})")
         else:
-            send_advanced_recovery_email_async(email, recovery_code, user_name, "Email Verification")
+            send_advanced_recovery_email_async(recipient_email, recovery_code, user_name, "Email Verification")
 
         return jsonify({
             "success": True,
@@ -461,7 +465,7 @@ def initiate_advanced_recovery():
             "available_methods": available_methods,
             "has_security_questions": len(security_questions) > 0,
             "expires_in": 900,
-            "recipient_email": email,
+            "recipient_email": recipient_email,
             **({"dev_code": recovery_code} if Config.RECOVERY_DEV_MODE else {})
         }), 200        
     except Exception as e:
