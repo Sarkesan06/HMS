@@ -5,7 +5,7 @@ import string
 import threading
 import uuid
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
 import google.oauth2.id_token
 from google.auth.transport import requests
@@ -337,13 +337,16 @@ Hospital Management System
 
 def send_advanced_recovery_email_async(email, code, name, recovery_method):
     """Fire-and-forget email sender to avoid request timeout on deployment."""
+    app = current_app._get_current_object()
+
     def _worker():
-        try:
-            sent = send_advanced_recovery_email(email, code, name, recovery_method)
-            if not sent:
-                print(f"Async recovery email failed for {email}")
-        except Exception as exc:
-            print(f"Async recovery email exception for {email}: {exc}")
+        with app.app_context():
+            try:
+                sent = send_advanced_recovery_email(email, code, name, recovery_method)
+                if not sent:
+                    print(f"Async recovery email failed for {email}")
+            except Exception as exc:
+                print(f"Async recovery email exception for {email}: {exc}")
 
     thread = threading.Thread(target=_worker, daemon=True)
     thread.start()
