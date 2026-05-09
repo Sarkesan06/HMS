@@ -16,6 +16,7 @@ class Config:
     MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER", MAIL_USERNAME)
     MAIL_TIMEOUT = int(os.getenv("MAIL_TIMEOUT", "10"))
     RECOVERY_DEV_MODE = os.getenv("RECOVERY_DEV_MODE", "false").lower() == "true"
+    RECOVERY_EMAIL_MODE = os.getenv("RECOVERY_EMAIL_MODE", "async").lower()
 
 
     FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5500")

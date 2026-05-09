@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 import random
 import re
 import string
+import threading
 import uuid
 
 from flask import Blueprint, jsonify, request
@@ -333,6 +334,20 @@ Hospital Management System
     
     return send_email(email, subject, text_body, html_body)
 
+
+def send_advanced_recovery_email_async(email, code, name, recovery_method):
+    """Fire-and-forget email sender to avoid request timeout on deployment."""
+    def _worker():
+        try:
+            sent = send_advanced_recovery_email(email, code, name, recovery_method)
+            if not sent:
+                print(f"Async recovery email failed for {email}")
+        except Exception as exc:
+            print(f"Async recovery email exception for {email}: {exc}")
+
+    thread = threading.Thread(target=_worker, daemon=True)
+    thread.start()
+
 # ================= 1. INITIATE RECOVERY WITH MULTIPLE METHODS =================
 
 @auth_bp.route("/recovery/initiate-advanced", methods=["POST"])
@@ -421,35 +436,20 @@ def initiate_advanced_recovery():
             "attempts": 0
         })
         
-        # Send recovery code via email (non-blocking fallback on failure)
-        try:
-            email_sent = send_advanced_recovery_email(email, recovery_code, user_name, "Email Verification")
-        except Exception as email_exception:
-            email_sent = False
-            print(f"Recovery email exception for {email}: {email_exception}")
-
-        if not email_sent:
-            print(f"RECOVERY FALLBACK CODE for {email}: {recovery_code} (recovery_id={recovery_id})")
-            fallback_message = (
-                "Recovery session created, but email delivery is unavailable right now. "
-                "Please use another verification method or contact support."
-            )
-            if Config.RECOVERY_DEV_MODE:
-                fallback_message = "Recovery session created in development mode. Use the returned recovery code."
-
-            response_payload = {
-                "success": True,
-                "message": fallback_message,
-                "recovery_id": recovery_id,
-                "available_methods": available_methods,
-                "has_security_questions": len(security_questions) > 0,
-                "expires_in": 900,
-                "recipient_email": email
-            }
-            if Config.RECOVERY_DEV_MODE:
-                response_payload["dev_code"] = recovery_code
-
-            return jsonify(response_payload), 200
+        # Avoid blocking request on SMTP in production hosting (prevents 502 timeout)
+        email_mode = Config.RECOVERY_EMAIL_MODE
+        if email_mode == "sync":
+            try:
+                email_sent = send_advanced_recovery_email(email, recovery_code, user_name, "Email Verification")
+                if not email_sent:
+                    print(f"RECOVERY FALLBACK CODE for {email}: {recovery_code} (recovery_id={recovery_id})")
+            except Exception as email_exception:
+                print(f"Recovery email exception for {email}: {email_exception}")
+                print(f"RECOVERY FALLBACK CODE for {email}: {recovery_code} (recovery_id={recovery_id})")
+        elif email_mode == "disabled":
+            print(f"RECOVERY EMAIL DISABLED. CODE for {email}: {recovery_code} (recovery_id={recovery_id})")
+        else:
+            send_advanced_recovery_email_async(email, recovery_code, user_name, "Email Verification")
 
         return jsonify({
             "success": True,
@@ -458,7 +458,8 @@ def initiate_advanced_recovery():
             "available_methods": available_methods,
             "has_security_questions": len(security_questions) > 0,
             "expires_in": 900,
-            "recipient_email": email
+            "recipient_email": email,
+            **({"dev_code": recovery_code} if Config.RECOVERY_DEV_MODE else {})
         }), 200        
     except Exception as e:
         print(f"Error: {str(e)}")
