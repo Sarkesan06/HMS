@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from app import mongo
 from app.email_utils import send_email
@@ -118,17 +119,17 @@ def check_and_send_reminders():
     """Check for appointments in the next 5 minutes and send reminders."""
 
     try:
-        now = datetime.now()
-        current_date = now.strftime("%Y-%m-%d")
-        current_time = now.strftime("%H:%M")
-        future_time = (now + timedelta(minutes=5)).strftime("%H:%M")
+        tz = ZoneInfo("Asia/Kolkata")
+        now = datetime.now(tz).replace(second=0, microsecond=0)
+        window_end = now + timedelta(minutes=5)
+        today = now.strftime("%Y-%m-%d")
+        tomorrow = (now + timedelta(days=1)).strftime("%Y-%m-%d")
 
-        print(f"Checking appointments between {current_time} and {future_time} on {current_date}")
+        print(f"Checking reminders from {now.strftime('%Y-%m-%d %H:%M')} to {window_end.strftime('%Y-%m-%d %H:%M')} IST")
 
         appointments = mongo.db.appointments.find({
-            "date": current_date,
-            "time": {"$gte": current_time, "$lte": future_time},
-            "status": "Pending",
+            "date": {"$in": [today, tomorrow]},
+            "status": {"$in": ["Pending", "Confirmed"]},
             "reminder_sent": {"$ne": True},
         })
 
@@ -138,6 +139,27 @@ def check_and_send_reminders():
         reminders_sent = 0
 
         for appointment in appointments_list:
+            appt_date = appointment.get("date")
+            appt_time = appointment.get("time")
+            if not appt_date or not appt_time:
+                continue
+
+            # Accept both HH:MM and HH:MM:SS
+            appt_dt = None
+            for fmt in ("%Y-%m-%d %H:%M", "%Y-%m-%d %H:%M:%S"):
+                try:
+                    appt_dt = datetime.strptime(f"{appt_date} {appt_time}", fmt).replace(tzinfo=tz)
+                    break
+                except ValueError:
+                    continue
+
+            if not appt_dt:
+                print(f"Skipping appointment with invalid date/time: {appointment.get('_id')} -> {appt_date} {appt_time}")
+                continue
+
+            if not (now <= appt_dt <= window_end):
+                continue
+
             patient_email = None
             patient_name = appointment.get("patient", "Patient")
 
@@ -169,7 +191,7 @@ def check_and_send_reminders():
 
                 if success:
                     mongo.db.appointments.update_one(
-                        {"_id": appointment.get("_id")},
+                        {"_id": appointment.get("_id"), "reminder_sent": {"$ne": True}},
                         {"$set": {"reminder_sent": True, "reminder_sent_at": datetime.now()}},
                     )
                     reminders_sent += 1
