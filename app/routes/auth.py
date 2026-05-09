@@ -8,13 +8,13 @@ import string
 import hashlib
 import uuid
 from datetime import datetime, timedelta
-from flask import request, jsonify, current_app
+from flask import request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import mongo, bcrypt, mail
+from flask_mail import Message
 import re
 from bson.objectid import ObjectId
 from config import Config
-from app.mail_service import send_transactional_email
 # Add these imports at the top of auth.py
 import google.oauth2.id_token
 from google.auth.transport import requests
@@ -39,7 +39,7 @@ def google_login():
         if not token:
             return jsonify({'message': 'No token provided'}), 400
         
-        GOOGLE_CLIENT_ID = Config.GOOGLE_CLIENT_ID
+        GOOGLE_CLIENT_ID = '633988002854-tea7qq18oigrdg0kqen1l7ohupoibl04.apps.googleusercontent.com'
         
         try:
             # Verify Google token
@@ -280,22 +280,17 @@ def generate_recovery_code():
 
 def log_security_event(email, event_type, details, ip_address=None, user_agent=None):
     """Log security events for audit trail"""
-    try:
-        mongo.db.security_logs.insert_one({
-            "email": email,
-            "event_type": event_type,
-            "details": details,
-            "ip_address": ip_address,
-            "user_agent": user_agent,
-            "timestamp": datetime.utcnow()
-        })
-    except Exception as e:
-        print(f"Security log warning: {e}")
-
-# In app/routes/auth.py - Replace the existing send_advanced_recovery_email function
+    mongo.db.security_logs.insert_one({
+        "email": email,
+        "event_type": event_type,
+        "details": details,
+        "ip_address": ip_address,
+        "user_agent": user_agent,
+        "timestamp": datetime.utcnow()
+    })
 
 def send_advanced_recovery_email(email, code, name, recovery_method):
-    """Send advanced recovery email using Gmail SMTP"""
+    """Send advanced recovery email with multiple options"""
     
     subject = f"🔐 Account Recovery - {recovery_method} - Hospital Management System"
     
@@ -310,6 +305,7 @@ def send_advanced_recovery_email(email, code, name, recovery_method):
             .content {{ background: #f8f9fa; padding: 20px; border-radius: 0 0 10px 10px; }}
             .code {{ background: #e9ecef; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; border-radius: 10px; margin: 20px 0; }}
             .warning {{ background: #fff3cd; border: 1px solid #ffc107; padding: 10px; border-radius: 5px; margin: 15px 0; }}
+            .button {{ background: #2a9d8f; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; }}
             .footer {{ text-align: center; font-size: 12px; color: #666; margin-top: 20px; }}
         </style>
     </head>
@@ -321,14 +317,20 @@ def send_advanced_recovery_email(email, code, name, recovery_method):
             </div>
             <div class="content">
                 <p>Dear <strong>{name}</strong>,</p>
+                
                 <p>We received a request to recover your account using <strong>{recovery_method}</strong>.</p>
-                <div class="code">{code}</div>
+                
+                <div class="code">
+                    {code}
+                </div>
+                
                 <div class="warning">
                     <strong>⚠️ Security Alert:</strong>
-                    <ul>
+                    <ul style="margin: 10px 0 0 20px;">
                         <li>This code will expire in 15 minutes</li>
                         <li>Do not share this code with anyone</li>
-                        <li>If you didn't request this, please ignore this email</li>
+                        <li>If you didn't request this, your account may be at risk</li>
+                        <li><a href="http://localhost:5000/security-alert.html?email={email}" class="button">🔒 Report Suspicious Activity</a></li>
                     </ul>
                 </div>
             </div>
@@ -340,48 +342,25 @@ def send_advanced_recovery_email(email, code, name, recovery_method):
     </html>
     """
     
-    text_body = f"""
-Hospital Management System - Account Recovery
-
-Dear {name},
-
-We received a request to recover your account using {recovery_method}.
-
-Your verification code is: {code}
-
-This code will expire in 15 minutes.
-
-If you didn't request this, please ignore this email.
-
-Thank you,
-Hospital Management System
-"""
-    
     try:
-        from flask_mail import Message
-        from app import mail
-        
         msg = Message(
             subject=subject,
             recipients=[email],
-            body=text_body,
             html=html_body,
-            sender=Config.MAIL_DEFAULT_SENDER
+            sender='sharkroshan@gmail.com'
         )
         mail.send(msg)
-        print(f"✅ Recovery email sent to {email}")
-        return True, None
-        
+        return True
     except Exception as e:
-        print(f"❌ Failed to send email: {str(e)}")
-        return False, str(e)
+        print(f"Error sending email: {e}")
+        return False
 
 # ================= 1. INITIATE RECOVERY WITH MULTIPLE METHODS =================
 
 @auth_bp.route("/recovery/initiate-advanced", methods=["POST"])
 def initiate_advanced_recovery():
     try:
-        data = request.get_json(silent=True) or {}
+        data = request.get_json()
         email = data.get("email")
         ip_address = request.remote_addr
         user_agent = request.headers.get('User-Agent')
@@ -418,7 +397,6 @@ def initiate_advanced_recovery():
         
         if not user:
             # Security: Don't reveal if email exists
-            print(f"Recovery requested for unregistered email: {email}")
             return jsonify({
                 "success": True,
                 "message": "If your email is registered, you will receive recovery options",
@@ -465,12 +443,7 @@ def initiate_advanced_recovery():
         })
         
         # Send email with code
-        email_sent, email_error = send_advanced_recovery_email(email, recovery_code, user_name, "Email Verification")
-        if not email_sent:
-            return jsonify({
-                "success": False,
-                "message": f"Recovery session created, but email could not be sent: {email_error}"
-            }), 500
+        send_advanced_recovery_email(email, recovery_code, user_name, "Email Verification")
         
         log_security_event(email, "recovery_initiated", 
                           f"Recovery initiated with methods: {available_methods}",
@@ -482,8 +455,7 @@ def initiate_advanced_recovery():
             "recovery_id": recovery_id,
             "available_methods": available_methods,
             "has_security_questions": len(security_questions) > 0,
-            "expires_in": 900,  # 15 minutes in seconds
-            "recipient_email": email
+            "expires_in": 900  # 15 minutes in seconds
         }), 200
         
     except Exception as e:
@@ -495,7 +467,7 @@ def initiate_advanced_recovery():
 @auth_bp.route("/recovery/verify", methods=["POST"])
 def verify_recovery():
     try:
-        data = request.get_json(silent=True) or {}
+        data = request.get_json()
         recovery_id = data.get("recovery_id")
         verification_type = data.get("verification_type")  # email, security_questions, backup_code, trusted_device
         verification_data = data.get("verification_data")
@@ -525,10 +497,8 @@ def verify_recovery():
         
         # Method 2: Security Questions
         elif verification_type == "security_questions":
-            questions = (verification_data or {}).get("questions", [])
+            questions = verification_data.get("questions", [])
             user = mongo.db[recovery["collection"]].find_one({"email": email})
-            if not user:
-                return jsonify({"success": False, "message": "User account not found"}), 404
             stored_questions = user.get("security_questions", [])
             
             # Verify answers
@@ -560,9 +530,7 @@ def verify_recovery():
         
         # Method 4: Trusted Device
         elif verification_type == "trusted_device":
-            device_token = (verification_data or {}).get("device_token")
-            if not device_token:
-                return jsonify({"success": False, "message": "Device token is required"}), 400
+            device_token = verification_data.get("device_token")
             trusted = mongo.db.trusted_devices.find_one({
                 "email": email,
                 "device_token": device_token,
@@ -626,7 +594,7 @@ def verify_recovery():
 @auth_bp.route("/recovery/advanced-reset", methods=["POST"])
 def advanced_reset_password():
     try:
-        data = request.get_json(silent=True) or {}
+        data = request.get_json()
         recovery_id = data.get("recovery_id")
         reset_token = data.get("reset_token")
         new_password = data.get("new_password")
@@ -640,9 +608,6 @@ def advanced_reset_password():
         
         if not recovery:
             return jsonify({"success": False, "message": "Invalid recovery session"}), 400
-
-        if not new_password:
-            return jsonify({"success": False, "message": "New password is required"}), 400
         
         # Validate password strength
         if len(new_password) < 8:
@@ -709,7 +674,7 @@ def advanced_reset_password():
 def setup_security():
     try:
         email = get_jwt_identity()
-        data = request.get_json(silent=True) or {}
+        data = request.get_json()
         
         # Setup Security Questions
         if "security_questions" in data:
@@ -780,7 +745,7 @@ def get_recovery_options():
             if user:
                 break
         
-        security_questions = user.get("security_questions", []) if user else []
+        security_questions = user.get("security_questions", [])
         has_backup_codes = mongo.db.backup_codes.find_one({"email": email}) is not None
         trusted_devices = list(mongo.db.trusted_devices.find({"email": email}))
         
@@ -820,11 +785,7 @@ def send_password_changed_alert(email, ip_address):
     """
     
     try:
-        response = send_transactional_email(
-            to_email=email,
-            subject=subject,
-            text_body=body,
-        )
-        print(f"Password change alert sent via SendGrid to {email}: {response.status_code}")
-    except Exception as e:
-        print(f"Error sending password change alert: {e}")
+        msg = Message(subject, recipients=[email], body=body)
+        mail.send(msg)
+    except:
+        pass
