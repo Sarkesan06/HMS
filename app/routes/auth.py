@@ -351,6 +351,16 @@ def send_advanced_recovery_email_async(email, code, name, recovery_method):
     thread = threading.Thread(target=_worker, daemon=True)
     thread.start()
 
+
+def mask_email(email):
+    """Mask email for safe UI display."""
+    if not email or "@" not in email:
+        return email
+    local, domain = email.split("@", 1)
+    if len(local) <= 2:
+        return f"{local[0]}***@{domain}" if local else f"***@{domain}"
+    return f"{local[:2]}***@{domain}"
+
 # ================= 1. INITIATE RECOVERY WITH MULTIPLE METHODS =================
 
 @auth_bp.route("/recovery/initiate-advanced", methods=["POST"])
@@ -420,8 +430,10 @@ def initiate_advanced_recovery():
         if trusted_device:
             available_methods.append("trusted_device")
         
-        # Send code to dedicated recovery email when configured
-        recipient_email = (user.get("recovery_email") or email).strip()
+        # By default send to the entered account email to avoid delivering to stale recovery_email.
+        recipient_email = email.strip()
+        if Config.RECOVERY_USE_DEDICATED_EMAIL:
+            recipient_email = (user.get("recovery_email") or email).strip()
 
         # Create recovery session
         recovery_id = str(uuid.uuid4())
@@ -443,8 +455,25 @@ def initiate_advanced_recovery():
             "attempts": 0
         })
         
-        # Always send in background to prevent request timeout (HTTP 502 on Render)
-        send_advanced_recovery_email_async(recipient_email, recovery_code, user_name, "Email Verification")
+        # Send email either sync (verify delivery now) or async (faster response).
+        email_mode = (Config.RECOVERY_EMAIL_MODE or "async").lower()
+        email_sent = True
+        if email_mode == "sync":
+            email_sent = send_advanced_recovery_email(
+                recipient_email, recovery_code, user_name, "Email Verification"
+            )
+        else:
+            send_advanced_recovery_email_async(recipient_email, recovery_code, user_name, "Email Verification")
+
+        if not email_sent:
+            mongo.db.recovery_attempts.update_one(
+                {"recovery_id": recovery_id},
+                {"$set": {"status": "email_failed", "email_failed_at": datetime.utcnow()}}
+            )
+            return jsonify({
+                "success": False,
+                "message": "Failed to send recovery code email. Please check mail configuration and try again."
+            }), 500
 
         return jsonify({
             "success": True,
@@ -453,7 +482,7 @@ def initiate_advanced_recovery():
             "available_methods": available_methods,
             "has_security_questions": len(security_questions) > 0,
             "expires_in": 900,
-            "recipient_email": recipient_email,
+            "recipient_email": mask_email(recipient_email),
             **({"dev_code": recovery_code} if Config.RECOVERY_DEV_MODE else {})
         }), 200        
     except Exception as e:

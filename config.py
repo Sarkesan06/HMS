@@ -23,6 +23,8 @@ class Config:
     MAIL_TIMEOUT = int(os.getenv("MAIL_TIMEOUT", "10"))
     RECOVERY_DEV_MODE = os.getenv("RECOVERY_DEV_MODE", "false").lower() == "true"
     RECOVERY_EMAIL_MODE = os.getenv("RECOVERY_EMAIL_MODE", "async").lower()
+    # Send recovery code to the entered account email by default to avoid confusion.
+    RECOVERY_USE_DEDICATED_EMAIL = os.getenv("RECOVERY_USE_DEDICATED_EMAIL", "false").lower() == "true"
 
 
     FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5500")
