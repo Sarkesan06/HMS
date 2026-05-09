@@ -1,33 +1,23 @@
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token
-from app import mongo, bcrypt
-from datetime import timedelta, datetime
-import re
-import random
-import string
-import hashlib
-import uuid
 from datetime import datetime, timedelta
-from flask import request, jsonify, current_app
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from app import mongo, bcrypt, mail
+import random
 import re
-from bson.objectid import ObjectId
-from config import Config
-# Add these imports at the top of auth.py
+import string
+import uuid
+
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
 import google.oauth2.id_token
 from google.auth.transport import requests
-from datetime import datetime, timedelta
-from app.email_utils import send_email, send_recovery_email
+
+from app import bcrypt, mongo
+from app.email_utils import send_email
+from config import Config
 
 
 auth_bp = Blueprint("auth", __name__)
 
 
 # ================= GOOGLE LOGIN FOR ALL ROLES =================
-# Add these imports at the top
-import google.oauth2.id_token
-from google.auth.transport import requests
 
 # Google Login Endpoint
 @auth_bp.route('/google-login', methods=['POST'])
@@ -292,12 +282,6 @@ def log_security_event(email, event_type, details, ip_address=None, user_agent=N
     except Exception as e:
         print(f"Security log warning: {e}")
 
-# In app/routes/auth.py - Remove or comment out SendGrid imports
-# from app.mail_service import send_transactional_email  <- Remove this
-
-from app.email_utils import send_email  # Use this instead
-
-# Then update the send_advanced_recovery_email function:
 def send_advanced_recovery_email(email, code, name, recovery_method):
     """Send recovery email using Gmail SMTP"""
     
@@ -437,38 +421,23 @@ def initiate_advanced_recovery():
             "attempts": 0
         })
         
-        # Send email with code
-        # In app/routes/auth.py - Find this section:
-
-# Send email with code
+        # Send recovery code via email
         email_sent, email_error = send_advanced_recovery_email(email, recovery_code, user_name, "Email Verification")
         if not email_sent:
+            print(f"Recovery email failed for {email}: {email_error}")
             return jsonify({
                 "success": False,
-                "message": f"Recovery session created, but email could not be sent: {email_error}"
+                "message": "Recovery session created, but email could not be sent. Please try again."
             }), 500
 
-        # REPLACE IT WITH THIS (temporary fix):
-
-        # For development - just log the code instead of sending email
-        print(f"\n{'='*60}")
-        print(f"🔐 ACCOUNT RECOVERY CODE (Temporary - Check Console)")
-        print(f"Email: {email}")
-        print(f"Recovery Code: {recovery_code}")
-        print(f"Recovery ID: {recovery_id}")
-        print(f"{'='*60}\n")
-
-        # Don't fail if email fails - just show the code in console
-        # For production on Render, you'll see this code in the logs
         return jsonify({
             "success": True,
-            "message": "Recovery session created. Check server logs for the code.",
+            "message": "Recovery session created. Please check your email for the recovery code.",
             "recovery_id": recovery_id,
             "available_methods": available_methods,
             "has_security_questions": len(security_questions) > 0,
             "expires_in": 900,
-            "recipient_email": email,
-            "dev_code": recovery_code  # Include code in response for development
+            "recipient_email": email
         }), 200        
     except Exception as e:
         print(f"Error: {str(e)}")
