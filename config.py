@@ -11,9 +11,14 @@ class Config:
     MAIL_SERVER = os.getenv("MAIL_SERVER", "smtp.gmail.com")
     MAIL_PORT = int(os.getenv("MAIL_PORT", "587"))
     MAIL_USE_TLS = os.getenv("MAIL_USE_TLS", "true").lower() == "true"
-    MAIL_USERNAME = os.getenv("MAIL_USERNAME", "sharkroshan@gmail.com")
-    MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", " tpci kcfn gmtx mkov")
-    MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER", MAIL_USERNAME)
+    _mail_username_raw = os.getenv("MAIL_USERNAME", "sharkroshan@gmail.com")
+    _mail_password_raw = os.getenv("MAIL_PASSWORD", "tpcikcfngmtxmkov")
+    _mail_default_sender_raw = os.getenv("MAIL_DEFAULT_SENDER", _mail_username_raw)
+
+    MAIL_USERNAME = _mail_username_raw.strip()
+    # Gmail app passwords are shown with spaces; SMTP expects a continuous token.
+    MAIL_PASSWORD = _mail_password_raw.replace(" ", "").strip()
+    MAIL_DEFAULT_SENDER = _mail_default_sender_raw.strip() or MAIL_USERNAME
     MAIL_TIMEOUT = int(os.getenv("MAIL_TIMEOUT", "10"))
     RECOVERY_DEV_MODE = os.getenv("RECOVERY_DEV_MODE", "false").lower() == "true"
     RECOVERY_EMAIL_MODE = os.getenv("RECOVERY_EMAIL_MODE", "async").lower()
