@@ -443,20 +443,8 @@ def initiate_advanced_recovery():
             "attempts": 0
         })
         
-        # Avoid blocking request on SMTP in production hosting (prevents 502 timeout)
-        email_mode = Config.RECOVERY_EMAIL_MODE
-        if email_mode == "sync":
-            try:
-                email_sent = send_advanced_recovery_email(recipient_email, recovery_code, user_name, "Email Verification")
-                if not email_sent:
-                    print(f"RECOVERY FALLBACK CODE for {recipient_email}: {recovery_code} (recovery_id={recovery_id})")
-            except Exception as email_exception:
-                print(f"Recovery email exception for {recipient_email}: {email_exception}")
-                print(f"RECOVERY FALLBACK CODE for {recipient_email}: {recovery_code} (recovery_id={recovery_id})")
-        elif email_mode == "disabled":
-            print(f"RECOVERY EMAIL DISABLED. CODE for {recipient_email}: {recovery_code} (recovery_id={recovery_id})")
-        else:
-            send_advanced_recovery_email_async(recipient_email, recovery_code, user_name, "Email Verification")
+        # Always send in background to prevent request timeout (HTTP 502 on Render)
+        send_advanced_recovery_email_async(recipient_email, recovery_code, user_name, "Email Verification")
 
         return jsonify({
             "success": True,
