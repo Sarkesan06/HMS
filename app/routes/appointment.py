@@ -7,10 +7,8 @@ from bson.objectid import ObjectId
 from flask_mail import Message
 from app import mail
 from config import Config
-<<<<<<< HEAD
 from app.email_utils import send_email
-=======
->>>>>>> 5a6ec990034948cc907825622d9c7cd3ebd0e95d
+
 from app.mail_service import send_transactional_email
 
 # Try to import ML models, but don't fail if not available
@@ -916,12 +914,8 @@ Thank you for choosing our hospital!
     except Exception as e:
         print(f"❌ Failed to send booking confirmation: {str(e)}")
         return False
-<<<<<<< HEAD
-    return send_email(patient_email, subject, text_body, html_body)
-=======
+    
 
->>>>>>> 5a6ec990034948cc907825622d9c7cd3ebd0e95d
-# ================= BOOK APPOINTMENT =================
 @appointment_bp.route("/book", methods=["POST"])
 def book_appointment():
     try:
