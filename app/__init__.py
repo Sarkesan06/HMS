@@ -16,7 +16,8 @@ from flask import Flask, send_from_directory, abort
 from flask_pymongo import PyMongo
 
 # Extensions
-mongo = PyMongo()
+# Fail fast on Mongo connectivity issues to avoid 30s worker hangs/502s.
+mongo = PyMongo(serverSelectionTimeoutMS=5000, connectTimeoutMS=5000, socketTimeoutMS=10000)
 jwt = JWTManager()
 bcrypt = Bcrypt()
 mail = Mail()
