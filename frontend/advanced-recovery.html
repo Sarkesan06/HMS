@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Advanced Account Recovery - Hospital Management System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: linear-gradient(135deg, #1d3557, #457b9d);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.container {
+    max-width: 500px;
+    width: 100%;
+    margin: 0 auto;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    overflow: hidden;
+}
+
+.header {
+    background: linear-gradient(135deg, #1d3557, #457b9d);
+    color: white;
+    padding: 30px;
+    text-align: center;
+}
+
+.header h1 {
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+.content {
+    padding: 30px;
+}
+
+/* Rest of your existing styles remain the same */
+.step-progress {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30px;
+    position: relative;
+}
+
+.step-progress::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #e0e0e0;
+    z-index: 1;
+}
+
+.step {
+    text-align: center;
+    flex: 1;
+    position: relative;
+    z-index: 2;
+    background: white;
+}
+
+.step-circle {
+    width: 40px;
+    height: 40px;
+    background: #e0e0e0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 8px;
+    font-weight: bold;
+    color: #666;
+    transition: all 0.3s;
+}
+
+.step.active .step-circle {
+    background: #2a9d8f;
+    color: white;
+    box-shadow: 0 0 0 3px rgba(42,157,143,0.3);
+}
+
+.step.completed .step-circle {
+    background: #2a9d8f;
+    color: white;
+}
+
+.step-label {
+    font-size: 12px;
+    color: #666;
+}
+
+.step.active .step-label {
+    color: #2a9d8f;
+    font-weight: bold;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #333;
+}
+
+input, select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.3s;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: #2a9d8f;
+}
+
+button {
+    width: 100%;
+    padding: 12px;
+    background: #2a9d8f;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+button:hover:not(:disabled) {
+    background: #21867a;
+}
+
+button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.method-buttons {
+    display: grid;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.method-btn {
+    background: #f8f9fa;
+    border: 2px solid #e0e0e0;
+    padding: 15px;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.method-btn:hover:not(:disabled) {
+    background: #e9ecef;
+    border-color: #2a9d8f;
+}
+
+.method-icon {
+    font-size: 24px;
+}
+
+.method-title {
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.method-desc {
+    font-size: 12px;
+    color: #666;
+}
+
+.alert {
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: none;
+}
+
+.alert-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.alert-error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.alert-info {
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+.timer {
+    text-align: center;
+    font-size: 14px;
+    color: #e63946;
+    margin-top: 10px;
+}
+
+.back-link {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.back-link a {
+    color: #457b9d;
+    text-decoration: none;
+}
+
+.code-input {
+    font-size: 24px;
+    text-align: center;
+    letter-spacing: 10px;
+    font-family: monospace;
+}
+
+.requirement {
+    font-size: 12px;
+    margin: 5px 0;
+    padding: 3px;
+}
+
+.requirement.valid {
+    color: #2a9d8f;
+}
+
+.requirement.invalid {
+    color: #e63946;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.loading {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #fff;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    margin-right: 8px;
+}
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>🔐 Account Recovery</h1>
+        <p>Advanced Security Verification</p>
+    </div>
+    
+    <div class="content">
+        <!-- Step Progress -->
+        <div class="step-progress">
+            <div class="step" id="step1">
+                <div class="step-circle">1</div>
+                <div class="step-label">Identity</div>
+            </div>
+            <div class="step" id="step2">
+                <div class="step-circle">2</div>
+                <div class="step-label">Verify</div>
+            </div>
+            <div class="step" id="step3">
+                <div class="step-circle">3</div>
+                <div class="step-label">Reset</div>
+            </div>
+        </div>
+        
+        <div id="alert" class="alert"></div>
+        
+        <!-- Step 1: Enter Email -->
+        <div id="step1Content">
+            <p style="text-align: center; color: #666; margin-bottom: 20px;">
+                Enter your registered email to begin account recovery
+            </p>
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" id="recoveryEmail" placeholder="your@email.com">
+            </div>
+            <button onclick="initiateRecovery()">Continue</button>
+            <div class="back-link">
+                <a href="index.html">← Back to Login</a>
+            </div>
+        </div>
+        
+        <!-- Step 2: Choose Verification Method -->
+        <div id="step2Content" style="display: none;">
+            <p style="text-align: center; color: #666; margin-bottom: 20px;">
+                Choose how you want to verify your identity
+            </p>
+            <div id="methodButtons" class="method-buttons"></div>
+            <div id="verificationForm" style="display: none;"></div>
+            <div class="back-link">
+                <a href="#" onclick="goBackToStep1()">← Use different email</a>
+            </div>
+        </div>
+        
+        <!-- Step 3: Reset Password -->
+        <div id="step3Content" style="display: none;">
+            <p style="text-align: center; color: #666; margin-bottom: 20px;">
+                Create a strong new password
+            </p>
+            <div class="form-group">
+                <label>New Password</label>
+                <input type="password" id="newPassword" placeholder="Enter new password" onkeyup="checkPasswordStrength()">
+            </div>
+            <div id="passwordStrength" class="password-strength"></div>
+            <div id="requirements">
+                <div id="req-length" class="requirement invalid">❌ At least 8 characters</div>
+                <div id="req-upper" class="requirement invalid">❌ At least 1 uppercase letter</div>
+                <div id="req-lower" class="requirement invalid">❌ At least 1 lowercase letter</div>
+                <div id="req-number" class="requirement invalid">❌ At least 1 number</div>
+                <div id="req-special" class="requirement invalid">❌ At least 1 special character</div>
+            </div>
+            <div class="form-group">
+                <label>Confirm Password</label>
+                <input type="password" id="confirmPassword" placeholder="Confirm new password" onkeyup="checkPasswordMatch()">
+            </div>
+            <div id="matchMessage" style="font-size: 12px; margin: 5px 0;"></div>
+            <button onclick="resetPassword()">Reset Password</button>
+            <div class="back-link">
+                <a href="index.html">← Back to Login</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const BASE_URL =
+    window.__API_BASE_URL__ ||
+    localStorage.getItem("apiBaseUrl") ||
+    (window.location.origin && window.location.origin !== "null" && window.location.origin !== "file://"
+        ? window.location.origin
+        : `${window.location.protocol === "https:" ? "https:" : "http:"}//${window.location.hostname || "127.0.0.1"}:5000`);
+let recoveryId = null;
+let resetToken = null;
+let availableMethods = [];
+let timerInterval = null;
+
+async function parseResponseBody(res) {
+    const text = await res.text();
+    if (!text || !text.trim()) return {};
+    try {
+        return JSON.parse(text.trim());
+    } catch (error) {
+        return { message: text };
+    }
+}
+
+async function safeFetchJson(url, options = {}) {
+    const response = await fetch(url, options);
+    const data = await parseResponseBody(response);
+    return { response, data };
+}
+
+function showAlert(message, type) {
+    const alertDiv = document.getElementById("alert");
+    alertDiv.className = `alert alert-${type}`;
+    alertDiv.innerHTML = message;
+    alertDiv.style.display = "block";
+    
+    setTimeout(() => {
+        alertDiv.style.display = "none";
+    }, 5000);
+}
+
+function showStep(step) {
+    document.getElementById("step1Content").style.display = step === 1 ? "block" : "none";
+    document.getElementById("step2Content").style.display = step === 2 ? "block" : "none";
+    document.getElementById("step3Content").style.display = step === 3 ? "block" : "none";
+    
+    for (let i = 1; i <= 3; i++) {
+        const stepDiv = document.getElementById(`step${i}`);
+        if (i < step) {
+            stepDiv.classList.add("completed");
+            stepDiv.classList.remove("active");
+        } else if (i === step) {
+            stepDiv.classList.add("active");
+            stepDiv.classList.remove("completed");
+        } else {
+            stepDiv.classList.remove("active", "completed");
+        }
+    }
+}
+
+function goBackToStep1() {
+    showStep(1);
+    if (timerInterval) clearInterval(timerInterval);
+    recoveryId = null;
+    resetToken = null;
+}
+
+// Step 1: Initiate Recovery
+function initiateRecovery() {
+    const email = document.getElementById("recoveryEmail").value.trim();
+    
+    if (!email) {
+        showAlert("Please enter your email address", "error");
+        return;
+    }
+    
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<span class="loading"></span> Processing...';
+    button.disabled = true;
+    
+    safeFetchJson(BASE_URL + "/auth/recovery/initiate-advanced", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email })
+    })
+    .then(({ response, data }) => {
+        if (response.ok && data.success) {
+            recoveryId = data.recovery_id;
+            availableMethods = data.available_methods || ["email"];
+            
+            showAlert(data.message, "success");
+            showVerificationMethods(availableMethods);
+            showStep(2);
+            startTimer(data.expires_in || 900);
+        } else {
+            showAlert(data.message || `Request failed with HTTP ${response.status}`, "error");
+        }
+    })
+    .catch(err => {
+        showAlert("Network error. Please try again.", "error");
+    })
+    .finally(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+// Step 2: Show Verification Methods
+function showVerificationMethods(methods) {
+    const container = document.getElementById("methodButtons");
+    const methodNames = {
+        "email": { icon: "📧", title: "Email Verification", desc: "Receive a 6-digit code to your email" },
+        "security_questions": { icon: "❓", title: "Security Questions", desc: "Answer your security questions" },
+        "backup_code": { icon: "🔑", title: "Backup Code", desc: "Use a one-time backup code" },
+        "trusted_device": { icon: "📱", title: "Trusted Device", desc: "Verify using a trusted device" }
+    };
+    
+    let html = "";
+    methods.forEach(method => {
+        const m = methodNames[method] || { icon: "🔐", title: method, desc: "Verify using " + method };
+        html += `
+            <button class="method-btn" onclick="showVerificationForm('${method}')">
+                <div class="method-icon">${m.icon}</div>
+                <div>
+                    <div class="method-title">${m.title}</div>
+                    <div class="method-desc">${m.desc}</div>
+                </div>
+            </button>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+// Show specific verification form
+function showVerificationForm(method) {
+    const formContainer = document.getElementById("verificationForm");
+    
+    if (method === "email") {
+        formContainer.innerHTML = `
+            <div class="form-group">
+                <label>Verification Code</label>
+                <input type="text" id="verificationCode" class="code-input" placeholder="000000" maxlength="6">
+                <div id="timerDisplay" class="timer"></div>
+            </div>
+            <button onclick="verifyWithEmail()">Verify Code</button>
+            <button onclick="resendCode()" style="margin-top: 10px; background: #457b9d;">Resend Code</button>
+        `;
+    } else if (method === "security_questions") {
+        formContainer.innerHTML = `
+            <div class="form-group">
+                <label>Security Question 1</label>
+                <input type="text" id="sq1" placeholder="Your answer">
+            </div>
+            <div class="form-group">
+                <label>Security Question 2</label>
+                <input type="text" id="sq2" placeholder="Your answer">
+            </div>
+            <button onclick="verifyWithSecurityQuestions()">Verify Answers</button>
+        `;
+    } else if (method === "backup_code") {
+        formContainer.innerHTML = `
+            <div class="form-group">
+                <label>Backup Code</label>
+                <input type="text" id="backupCode" placeholder="Enter 8-character backup code" maxlength="8">
+            </div>
+            <button onclick="verifyWithBackupCode()">Verify Backup Code</button>
+        `;
+    } else if (method === "trusted_device") {
+        formContainer.innerHTML = `
+            <div class="form-group">
+                <label>Device Token</label>
+                <input type="text" id="deviceToken" placeholder="Enter device token">
+            </div>
+            <button onclick="verifyWithTrustedDevice()">Verify Device</button>
+        `;
+    }
+    
+    formContainer.style.display = "block";
+}
+
+// Email Verification
+function verifyWithEmail() {
+    const code = document.getElementById("verificationCode").value;
+    
+    safeFetchJson(BASE_URL + "/auth/recovery/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            recovery_id: recoveryId,
+            verification_type: "email",
+            verification_data: code
+        })
+    })
+    .then(({ response, data }) => {
+        if (response.ok && data.success) {
+            resetToken = data.reset_token;
+            showAlert("Identity verified! Set your new password.", "success");
+            showStep(3);
+            if (timerInterval) clearInterval(timerInterval);
+        } else {
+            showAlert(data.message || `Verification failed with HTTP ${response.status}`, "error");
+        }
+    })
+    .catch(err => showAlert("Verification failed", "error"));
+}
+
+// Security Questions Verification
+function verifyWithSecurityQuestions() {
+    const questions = [
+        { question: "What is your mother's maiden name?", answer: document.getElementById("sq1").value },
+        { question: "What was your first pet's name?", answer: document.getElementById("sq2").value }
+    ];
+    
+    safeFetchJson(BASE_URL + "/auth/recovery/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            recovery_id: recoveryId,
+            verification_type: "security_questions",
+            verification_data: { questions: questions }
+        })
+    })
+    .then(({ response, data }) => {
+        if (response.ok && data.success) {
+            resetToken = data.reset_token;
+            showAlert("Identity verified! Set your new password.", "success");
+            showStep(3);
+        } else {
+            showAlert(data.message || `Verification failed with HTTP ${response.status}`, "error");
+        }
+    });
+}
+
+// Backup Code Verification
+function verifyWithBackupCode() {
+    const code = document.getElementById("backupCode").value;
+    
+    safeFetchJson(BASE_URL + "/auth/recovery/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            recovery_id: recoveryId,
+            verification_type: "backup_code",
+            verification_data: code
+        })
+    })
+    .then(({ response, data }) => {
+        if (response.ok && data.success) {
+            resetToken = data.reset_token;
+            showAlert("Identity verified! Set your new password.", "success");
+            showStep(3);
+        } else {
+            showAlert(data.message || `Verification failed with HTTP ${response.status}`, "error");
+        }
+    });
+}
+
+// Trusted Device Verification
+function verifyWithTrustedDevice() {
+    const deviceToken = document.getElementById("deviceToken").value;
+    
+    safeFetchJson(BASE_URL + "/auth/recovery/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            recovery_id: recoveryId,
+            verification_type: "trusted_device",
+            verification_data: { device_token: deviceToken }
+        })
+    })
+    .then(({ response, data }) => {
+        if (response.ok && data.success) {
+            resetToken = data.reset_token;
+            showAlert("Identity verified! Set your new password.", "success");
+            showStep(3);
+        } else {
+            showAlert(data.message || `Verification failed with HTTP ${response.status}`, "error");
+        }
+    });
+}
+
+// Resend Code
+function resendCode() {
+    const email = document.getElementById("recoveryEmail").value;
+    
+    safeFetchJson(BASE_URL + "/auth/recovery/initiate-advanced", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email })
+    })
+    .then(({ response, data }) => {
+        if (response.ok && data.success) {
+            recoveryId = data.recovery_id;
+            showAlert("New code sent to your email", "success");
+            startTimer(data.expires_in || 900);
+        } else {
+            showAlert(data.message || `Request failed with HTTP ${response.status}`, "error");
+        }
+    });
+}
+
+// Timer
+function startTimer(seconds) {
+    if (timerInterval) clearInterval(timerInterval);
+    
+    let remaining = seconds;
+    const timerDisplay = document.getElementById("timerDisplay");
+    if (!timerDisplay) return;
+    
+    timerInterval = setInterval(() => {
+        const minutes = Math.floor(remaining / 60);
+        const secs = remaining % 60;
+        timerDisplay.innerHTML = `Code expires in: ${minutes}:${secs.toString().padStart(2, '0')}`;
+        
+        if (remaining <= 0) {
+            clearInterval(timerInterval);
+            timerDisplay.innerHTML = "Code expired. Request a new one.";
+        }
+        remaining--;
+    }, 1000);
+}
+
+// Password Strength
+function checkPasswordStrength() {
+    const password = document.getElementById("newPassword").value;
+    
+    const hasLength = password.length >= 8;
+    const hasUpper = /[A-Z]/.test(password);
+    const hasLower = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    
+    updateRequirement("req-length", hasLength);
+    updateRequirement("req-upper", hasUpper);
+    updateRequirement("req-lower", hasLower);
+    updateRequirement("req-number", hasNumber);
+    updateRequirement("req-special", hasSpecial);
+    
+    const strength = [hasLength, hasUpper, hasLower, hasNumber, hasSpecial].filter(Boolean).length;
+    const strengthDiv = document.getElementById("passwordStrength");
+    
+    if (password.length === 0) {
+        strengthDiv.innerHTML = "";
+    } else if (strength === 5) {
+        strengthDiv.innerHTML = "✓ Strong Password";
+        strengthDiv.style.color = "#2a9d8f";
+    } else if (strength >= 3) {
+        strengthDiv.innerHTML = "⚠️ Medium Password";
+        strengthDiv.style.color = "#e9c46a";
+    } else {
+        strengthDiv.innerHTML = "❌ Weak Password";
+        strengthDiv.style.color = "#e63946";
+    }
+    
+    checkPasswordMatch();
+}
+
+function updateRequirement(elementId, isValid) {
+    const element = document.getElementById(elementId);
+    if (isValid) {
+        element.innerHTML = element.innerHTML.replace("❌", "✅");
+        element.classList.add("valid");
+        element.classList.remove("invalid");
+    } else {
+        element.innerHTML = element.innerHTML.replace("✅", "❌");
+        element.classList.add("invalid");
+        element.classList.remove("valid");
+    }
+}
+
+function checkPasswordMatch() {
+    const password = document.getElementById("newPassword").value;
+    const confirm = document.getElementById("confirmPassword").value;
+    const matchDiv = document.getElementById("matchMessage");
+    
+    if (confirm.length === 0) {
+        matchDiv.innerHTML = "";
+    } else if (password === confirm) {
+        matchDiv.innerHTML = "✅ Passwords match";
+        matchDiv.style.color = "#2a9d8f";
+    } else {
+        matchDiv.innerHTML = "❌ Passwords do not match";
+        matchDiv.style.color = "#e63946";
+    }
+}
+
+// Reset Password
+function resetPassword() {
+    const newPassword = document.getElementById("newPassword").value;
+    const confirmPassword = document.getElementById("confirmPassword").value;
+    
+    if (!newPassword || !confirmPassword) {
+        showAlert("Please fill all fields", "error");
+        return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+        showAlert("Passwords do not match", "error");
+        return;
+    }
+    
+    const hasLength = newPassword.length >= 8;
+    const hasUpper = /[A-Z]/.test(newPassword);
+    const hasLower = /[a-z]/.test(newPassword);
+    const hasNumber = /[0-9]/.test(newPassword);
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(newPassword);
+    
+    if (!hasLength || !hasUpper || !hasLower || !hasNumber || !hasSpecial) {
+        showAlert("Please meet all password requirements", "error");
+        return;
+    }
+    
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<span class="loading"></span> Resetting...';
+    button.disabled = true;
+    
+    safeFetchJson(BASE_URL + "/auth/recovery/advanced-reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            recovery_id: recoveryId,
+            reset_token: resetToken,
+            new_password: newPassword
+        })
+    })
+    .then(({ response, data }) => {
+        if (response.ok && data.success) {
+            showAlert(data.message, "success");
+            setTimeout(() => {
+                window.location.href = "index.html";
+            }, 3000);
+        } else {
+            showAlert(data.message || `Reset failed with HTTP ${response.status}`, "error");
+        }
+    })
+    .catch(err => showAlert("Error resetting password", "error"))
+    .finally(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+</script>
+
+</body>
+</html>

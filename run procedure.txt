@@ -1,0 +1,367 @@
+pip install -r requirements.txt
+
+
+python run.py(window 1)
+
+cd frontend -- python -m http.server 5500(window 2)
+
+mongod(window 3) - admin in powershell
+
+
+
+.\ngrok.exe http 5500
+
+
+
+http://10.169.250.191:5500/frontend/index.html
+
+clent id : 633988002854-tea7qq18oigrdg0kqen1l7ohupoibl04.apps.googleusercontent.com
+pytest tests/unit/ -v
+
+pytest tests/unit/ --cov=app
+
+mongo DB shell
+
+// 1. Password Resets Collection
+db.createCollection("password_resets")
+
+// 2. Recovery Attempts Collection  
+db.createCollection("recovery_attempts")
+
+// 3. Backup Codes Collection
+db.createCollection("backup_codes")
+
+// 4. Trusted Devices Collection
+db.createCollection("trusted_devices")
+
+// 5. Recovery Contacts Collection
+db.createCollection("recovery_contacts")
+
+// 6. Security Logs Collection
+db.createCollection("security_logs")
+
+
+Doctor Related (50+ questions):
+"How many doctors are there?"
+
+"List all doctors"
+
+"Show me the doctor directory"
+
+"Who is the best cardiologist?"
+
+"Best pediatrician in the hospital"
+
+"Top neurologist"
+
+"Leading orthopedic surgeon"
+
+"Tell me about Dr. Smith"
+
+"Dr. Johnson's details"
+
+"What is Dr. Williams' specialization?"
+
+"Doctors available today"
+
+"Which doctors are on duty now?"
+
+"Dr. Smith's schedule"
+
+"Doctor working hours"
+
+"Most popular doctor"
+
+"Busiest doctor in the hospital"
+
+"Doctor with most appointments"
+
+"Cardiology department doctors"
+
+"Neurology department staff"
+
+"Emergency doctors on shift"
+
+"Female doctors in gynecology"
+
+"Doctors accepting new patients"
+
+"Weekend doctor availability"
+
+"Night shift doctors"
+
+"Doctor consultation fees"
+
+"Dr. Smith's experience"
+
+"Doctor qualifications"
+
+"Which doctor speaks Hindi?"
+
+"Doctors near me"
+
+"Senior doctors list"
+
+👥 Patient Related (30+ questions):
+"How many patients are registered?"
+
+"Total patient count"
+
+"New patients this month"
+
+"New patients this week"
+
+"New patients today"
+
+"Active patients"
+
+"Frequent visitors"
+
+"List all patients"
+
+"Patient directory"
+
+"Find patient named John"
+
+"Search patient by name"
+
+"Male vs female patient ratio"
+
+"Patient age distribution"
+
+"Children patients count"
+
+"Senior citizen patients"
+
+"Patients with most visits"
+
+"Returning patients"
+
+"First-time patients"
+
+"Patient registration trend"
+
+"Monthly new patients"
+
+📅 Appointment Related (40+ questions):
+"Total appointments"
+
+"How many appointments today?"
+
+"Today's appointment schedule"
+
+"Tomorrow's appointments"
+
+"This week's appointments"
+
+"Next week's appointments"
+
+"Upcoming appointments"
+
+"Pending appointments"
+
+"Completed appointments"
+
+"Cancelled appointments"
+
+"Missed appointments"
+
+"No-show rate"
+
+"Appointment completion rate"
+
+"Busiest day for appointments"
+
+"Peak appointment hours"
+
+"Appointments by doctor"
+
+"Dr. Smith's appointments"
+
+"Morning vs evening appointments"
+
+"Weekly appointment trend"
+
+"Monthly appointment summary"
+
+"Appointment cancellation reasons"
+
+"Rescheduled appointments"
+
+"Online vs offline appointments"
+
+"Emergency appointments count"
+
+"Follow-up appointments"
+
+📊 Statistics (25+ questions):
+"Hospital statistics"
+
+"Complete hospital overview"
+
+"Performance metrics"
+
+"KPI dashboard"
+
+"Monthly report"
+
+"Quarterly summary"
+
+"Yearly analytics"
+
+"Department-wise statistics"
+
+"Doctor performance report"
+
+"Patient satisfaction rate"
+
+"Average waiting time"
+
+"Consultation duration"
+
+"Bed occupancy rate"
+
+"Emergency response time"
+
+"Staff efficiency ratio"
+
+🏥 Department Related (20+ questions):
+"Department overview"
+
+"Cardiology department details"
+
+"Neurology department info"
+
+"Pediatrics department"
+
+"Orthopedic department"
+
+"Gynecology department"
+
+"Dermatology department"
+
+"ENT department"
+
+"Ophthalmology department"
+
+"Psychiatry department"
+
+"Emergency department"
+
+"ICU details"
+
+"Pharmacy information"
+
+"Radiology department"
+
+"Laboratory services"
+
+"Physical therapy"
+
+💰 Financial (15+ questions):
+"Consultation fees"
+
+"Doctor consultation charges"
+
+"Emergency visit cost"
+
+"Home visit charges"
+
+"Payment methods accepted"
+
+"Insurance accepted"
+
+"Revenue estimation"
+
+"Monthly income"
+
+"Department-wise revenue"
+
+"Average bill amount"
+
+"Package deals"
+
+"Discount policies"
+
+"Corporate rates"
+
+🕐 Schedule Related (15+ questions):
+"Hospital timings"
+
+"OPD hours"
+
+"Emergency hours"
+
+"Visiting hours"
+
+"Pharmacy timings"
+
+"Laboratory hours"
+
+"Doctor shift timings"
+
+"Weekend schedule"
+
+"Holiday schedule"
+
+"Lunch break timings"
+
+"After-hours services"
+
+📈 Comparison & Analysis (20+ questions):
+"Busiest vs quietest day"
+
+"Compare doctor performance"
+
+"Which doctor is better?"
+
+"Monthly comparison"
+
+"Year-over-year growth"
+
+"Peak season analysis"
+
+"Appointment trends"
+
+"Increasing or decreasing trend"
+
+"Growth rate percentage"
+
+"Doctor ranking"
+
+"Department ranking"
+
+"Patient influx pattern"
+
+🩺 Medical/Symptom Related (30+ questions):
+"Fever treatment"
+
+"Cough remedy"
+
+"Headache relief"
+
+"Sore throat cure"
+
+"Stomach pain causes"
+
+"Back pain treatment"
+
+"Flu symptoms"
+
+"COVID-19 symptoms"
+
+"First aid for cuts"
+
+"Burn treatment"
+
+"Allergy relief"
+
+"High blood pressure"
+
+"Diabetes management"
+
+"Asthma attack first aid"
+
+"Heart attack symptoms"
+
+"Stroke warning signs"
