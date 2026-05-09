@@ -14,11 +14,11 @@ from app import mongo, bcrypt, mail
 import re
 from bson.objectid import ObjectId
 from config import Config
-from app.mail_service import send_transactional_email
 # Add these imports at the top of auth.py
 import google.oauth2.id_token
 from google.auth.transport import requests
 from datetime import datetime, timedelta
+from app.email_utils import send_email, send_recovery_email
 
 
 auth_bp = Blueprint("auth", __name__)
@@ -773,31 +773,24 @@ def get_recovery_options():
 # ================= HELPER: SEND PASSWORD CHANGE ALERT =================
 
 def send_password_changed_alert(email, ip_address):
+    """Send password change alert email"""
     subject = "🔒 Password Changed - Hospital Management System"
     
     body = f"""
-    Hospital Management System - Security Alert
+Hospital Management System - Security Alert
+
+Your password was recently changed.
+
+Details:
+📅 Date: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}
+🌐 IP Address: {ip_address}
+
+If this was you, you can ignore this message.
+
+If you did NOT change your password, please contact support immediately.
+
+Thank you,
+Hospital Management System
+"""
     
-    Your password was recently changed.
-    
-    Details:
-    📅 Date: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}
-    🌐 IP Address: {ip_address}
-    
-    If this was you, you can ignore this message.
-    
-    If you did NOT change your password, please contact support immediately.
-    
-    Thank you,
-    Hospital Management System
-    """
-    
-    try:
-        response = send_transactional_email(
-            to_email=email,
-            subject=subject,
-            text_body=body,
-        )
-        print(f"Password change alert sent via SendGrid to {email}: {response.status_code}")
-    except Exception as e:
-        print(f"Error sending password change alert: {e}")
+    send_email(email, subject, body)

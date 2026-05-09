@@ -9,7 +9,6 @@ from app import mail
 from config import Config
 from app.email_utils import send_email
 
-from app.mail_service import send_transactional_email
 
 # Try to import ML models, but don't fail if not available
 try:
@@ -803,7 +802,7 @@ def get_doctor_weekly_schedule():
 
 # ================= CONFIRMATION EMAIL FUNCTION =================
 def send_booking_confirmation_email(patient_email, patient_name, doctor_name, appointment_date, appointment_time, appointment_id, consult_type):
-    """Send booking confirmation email with appointment ID"""
+    """Send booking confirmation email"""
     
     if not patient_email:
         print("❌ No patient email provided")
@@ -829,9 +828,8 @@ def send_booking_confirmation_email(patient_email, patient_name, doctor_name, ap
             .header {{ background: linear-gradient(135deg, #1d3557, #457b9d); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }}
             .content {{ background: #f8f9fa; padding: 20px; border-radius: 0 0 10px 10px; }}
             .appointment-details {{ background: white; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #2a9d8f; }}
-            .appointment-id {{ background: #e9ecef; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 18px; font-weight: bold; text-align: center; margin: 10px 0; }}
-            .footer {{ text-align: center; font-size: 12px; color: #666; margin-top: 20px; padding-top: 10px; border-top: 1px solid #ddd; }}
-            .button {{ background: #2a9d8f; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; }}
+            .appointment-id {{ background: #e9ecef; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 18px; font-weight: bold; text-align: center; }}
+            .footer {{ text-align: center; font-size: 12px; color: #666; margin-top: 20px; }}
         </style>
     </head>
     <body>
@@ -842,45 +840,27 @@ def send_booking_confirmation_email(patient_email, patient_name, doctor_name, ap
             </div>
             <div class="content">
                 <p>Dear <strong>{patient_name}</strong>,</p>
-                
-                <p>Your appointment has been successfully booked! Please find the details below:</p>
-                
+                <p>Your appointment has been successfully booked!</p>
                 <div class="appointment-details">
-                    <h3 style="margin: 0 0 10px 0; color: #1d3557;">📋 Appointment Details:</h3>
+                    <h3>📋 Appointment Details:</h3>
                     <p><strong>🆔 Appointment ID:</strong></p>
                     <div class="appointment-id">{appointment_id}</div>
                     <p><strong>👨‍⚕️ Doctor:</strong> Dr. {doctor_name}<br>
                     <strong>📅 Date:</strong> {formatted_date}<br>
                     <strong>🕐 Time:</strong> {appointment_time}<br>
-                    <strong>🎥 Consultation Type:</strong> {"🎥 Video Consultation" if consult_type == "online" else "🏥 Hospital Visit"}</p>
+                    <strong>🎥 Consultation Type:</strong> {"Video Consultation" if consult_type == "online" else "Hospital Visit"}</p>
                 </div>
-                
-                {"<div style='background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 15px 0;'><strong>📌 For Video Consultation:</strong><br>Use the Appointment ID above to join the call from the Consultation page.<br><br><a href='https://meet.jit.si/HMS_" + appointment_id + "' class='button'>🎥 Join Video Call</a></div>" if consult_type == "online" else ""}
-                
-                <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 15px 0;">
-                    <strong>⚠️ Important Notes:</strong>
-                    <ul style="margin: 10px 0 0 20px;">
-                        <li>You will receive a reminder email 5 minutes before your appointment</li>
-                        <li>Please arrive 10 minutes early for in-person consultations</li>
-                        <li>For video consultations, ensure stable internet connection</li>
-                        <li>Keep your Appointment ID handy for reference</li>
-                    </ul>
-                </div>
-                
-                <div style="text-align: center; margin-top: 20px;">
-                    <a href="{Config.FRONTEND_URL}" class="button">📅 View My Appointments</a>
-                </div>
+                <p>You will receive a reminder 5 minutes before your appointment.</p>
+                <p>Thank you for choosing our hospital!</p>
             </div>
             <div class="footer">
                 <p>© 2024 Hospital Management System | All Rights Reserved</p>
-                <p>This is an automated confirmation, please do not reply.</p>
             </div>
         </div>
     </body>
     </html>
     """
     
-    # Plain text fallback
     text_body = f"""
 Hospital Management System - Appointment Confirmation
 
@@ -895,26 +875,13 @@ Appointment Details:
 🕐 Time: {appointment_time}
 🎥 Type: {"Video Consultation" if consult_type == "online" else "Hospital Visit"}
 
-{"For Video Consultation, use this link: https://meet.jit.si/HMS_" + appointment_id if consult_type == "online" else ""}
-
-You will receive a reminder email 5 minutes before your appointment.
+You will receive a reminder 5 minutes before your appointment.
 
 Thank you for choosing our hospital!
 """
     
-    try:
-        response = send_transactional_email(
-            to_email=patient_email,
-            subject=subject,
-            text_body=text_body,
-            html_body=html_body,
-        )
-        print(f"✅ Booking confirmation email sent via SendGrid to {patient_email}: {response.status_code}")
-        return True
-    except Exception as e:
-        print(f"❌ Failed to send booking confirmation: {str(e)}")
-        return False
-    
+    return send_email(patient_email, subject, text_body, html_body)
+
 
 @appointment_bp.route("/book", methods=["POST"])
 def book_appointment():

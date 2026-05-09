@@ -1,4 +1,4 @@
-# app/email_utils.py
+# app/email_utils.py - Complete replacement
 from flask_mail import Message
 from app import mail
 from config import Config
@@ -6,7 +6,7 @@ from config import Config
 def send_email(to_email, subject, text_body, html_body=None):
     """
     Send email using Gmail SMTP only
-    No SendGrid dependency
+    No SendGrid dependencies
     """
     
     if not to_email or '@' not in to_email:
@@ -15,9 +15,10 @@ def send_email(to_email, subject, text_body, html_body=None):
     
     # Check if email is configured
     if not Config.MAIL_PASSWORD:
-        print(f"⚠️ Email not configured. MAIL_PASSWORD is missing")
+        print(f"⚠️ Email not configured. MAIL_PASSWORD is missing in environment variables")
         print(f"📧 Would have sent to: {to_email}")
         print(f"   Subject: {subject}")
+        print(f"   Body: {text_body[:200]}...")
         return False
     
     try:
@@ -26,23 +27,68 @@ def send_email(to_email, subject, text_body, html_body=None):
             recipients=[to_email],
             body=text_body,
             html=html_body,
-            sender=Config.MAIL_DEFAULT_SENDER
+            sender=Config.MAIL_DEFAULT_SENDER or Config.MAIL_USERNAME
         )
         mail.send(msg)
-        print(f"✅ Email sent via Gmail to {to_email}")
+        print(f"✅ Email sent successfully to {to_email}")
         return True
         
     except Exception as e:
         print(f"❌ Email error: {str(e)}")
-        
-        # Helpful error messages
-        error_msg = str(e).lower()
-        if "authentication" in error_msg:
-            print("   → Fix: Generate a new App Password at https://myaccount.google.com/apppasswords")
-            print("   → Make sure 2-Step Verification is ON")
-        elif "sender" in error_msg:
-            print("   → Fix: Check MAIL_USERNAME and MAIL_DEFAULT_SENDER in config")
-        elif "connection" in error_msg:
-            print("   → Fix: Check internet connection or Render network settings")
-        
         return False
+
+
+def send_recovery_email(email, code, name):
+    """Simplified recovery email function"""
+    
+    subject = "🔐 Account Recovery - Hospital Management System"
+    
+    html_body = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body {{ font-family: Arial, sans-serif; }}
+            .container {{ max-width: 500px; margin: 0 auto; padding: 20px; }}
+            .header {{ background: #1d3557; color: white; padding: 20px; text-align: center; }}
+            .code {{ background: #f0f0f0; padding: 20px; font-size: 28px; font-weight: bold; text-align: center; letter-spacing: 5px; }}
+            .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #666; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h2>🏥 Hospital Management System</h2>
+                <p>Account Recovery</p>
+            </div>
+            <div class="content">
+                <p>Dear <strong>{name}</strong>,</p>
+                <p>Your account recovery code is:</p>
+                <div class="code">{code}</div>
+                <p>This code will expire in <strong>15 minutes</strong>.</p>
+                <p>If you didn't request this, please ignore this email.</p>
+            </div>
+            <div class="footer">
+                <p>© 2024 Hospital Management System</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    text_body = f"""
+Hospital Management System - Account Recovery
+
+Dear {name},
+
+Your account recovery code is: {code}
+
+This code will expire in 15 minutes.
+
+If you didn't request this, please ignore this email.
+
+Thank you,
+Hospital Management System
+"""
+    
+    return send_email(email, subject, text_body, html_body)
