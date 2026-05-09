@@ -801,23 +801,23 @@ def get_doctor_weekly_schedule():
 
 
 # ================= CONFIRMATION EMAIL FUNCTION =================
+# ================= CONFIRMATION EMAIL FUNCTION =================
 def send_booking_confirmation_email(patient_email, patient_name, doctor_name, appointment_date, appointment_time, appointment_id, consult_type):
     """Send booking confirmation email"""
-    
+
     if not patient_email:
-        print("❌ No patient email provided")
+        print("No patient email provided")
         return False
-    
-    # Format date for better display
+
     try:
         date_obj = datetime.strptime(appointment_date, '%Y-%m-%d')
         formatted_date = date_obj.strftime('%A, %B %d, %Y')
-    except:
+    except Exception:
         formatted_date = appointment_date
-    
-    subject = "✅ Appointment Confirmation - Hospital Management System"
-    
-    # Create HTML email body
+
+    subject = "Appointment Confirmation - Hospital Management System"
+    join_link = f"https://meet.jit.si/HMS_{appointment_id}"
+
     html_body = f"""
     <!DOCTYPE html>
     <html>
@@ -829,57 +829,57 @@ def send_booking_confirmation_email(patient_email, patient_name, doctor_name, ap
             .content {{ background: #f8f9fa; padding: 20px; border-radius: 0 0 10px 10px; }}
             .appointment-details {{ background: white; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #2a9d8f; }}
             .appointment-id {{ background: #e9ecef; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 18px; font-weight: bold; text-align: center; }}
-            .footer {{ text-align: center; font-size: 12px; color: #666; margin-top: 20px; }}
+            .video-box {{ background: #e7f3ff; border-radius: 8px; padding: 12px; margin-top: 12px; }}
         </style>
     </head>
     <body>
         <div class="container">
             <div class="header">
-                <h2>🏥 Hospital Management System</h2>
+                <h2>Hospital Management System</h2>
                 <p>Appointment Confirmation</p>
             </div>
             <div class="content">
                 <p>Dear <strong>{patient_name}</strong>,</p>
-                <p>Your appointment has been successfully booked!</p>
+                <p>Your appointment has been successfully booked! Please find the details below:</p>
                 <div class="appointment-details">
-                    <h3>📋 Appointment Details:</h3>
-                    <p><strong>🆔 Appointment ID:</strong></p>
+                    <h3>Appointment Details</h3>
+                    <p><strong>Appointment ID:</strong></p>
                     <div class="appointment-id">{appointment_id}</div>
-                    <p><strong>👨‍⚕️ Doctor:</strong> Dr. {doctor_name}<br>
-                    <strong>📅 Date:</strong> {formatted_date}<br>
-                    <strong>🕐 Time:</strong> {appointment_time}<br>
-                    <strong>🎥 Consultation Type:</strong> {"Video Consultation" if consult_type == "online" else "Hospital Visit"}</p>
+                    <p><strong>Doctor:</strong> Dr. {doctor_name}<br>
+                    <strong>Date:</strong> {formatted_date}<br>
+                    <strong>Time:</strong> {appointment_time}<br>
+                    <strong>Consultation Type:</strong> {"Video Consultation" if consult_type == "online" else "Hospital Visit"}</p>
                 </div>
-                <p>You will receive a reminder 5 minutes before your appointment.</p>
+                {"<div class='video-box'><strong>For Video Consultation:</strong><br>Use the Appointment ID above in Consultation page.<br><a href='" + join_link + "'>Join Video Call</a></div>" if consult_type == "online" else ""}
+                <p>You will receive a reminder email before your appointment.</p>
                 <p>Thank you for choosing our hospital!</p>
-            </div>
-            <div class="footer">
-                <p>© 2024 Hospital Management System | All Rights Reserved</p>
             </div>
         </div>
     </body>
     </html>
     """
-    
+
     text_body = f"""
 Hospital Management System - Appointment Confirmation
 
 Dear {patient_name},
 
-Your appointment has been successfully booked!
+Your appointment has been successfully booked! Please find the details below:
 
 Appointment Details:
-🆔 Appointment ID: {appointment_id}
-👨‍⚕️ Doctor: Dr. {doctor_name}
-📅 Date: {formatted_date}
-🕐 Time: {appointment_time}
-🎥 Type: {"Video Consultation" if consult_type == "online" else "Hospital Visit"}
+Appointment ID: {appointment_id}
+Doctor: Dr. {doctor_name}
+Date: {formatted_date}
+Time: {appointment_time}
+Type: {"Video Consultation" if consult_type == "online" else "Hospital Visit"}
 
-You will receive a reminder 5 minutes before your appointment.
+{"Direct link: " + join_link if consult_type == "online" else ""}
+
+You will receive a reminder email before your appointment.
 
 Thank you for choosing our hospital!
 """
-    
+
     return send_email(patient_email, subject, text_body, html_body)
 
 
