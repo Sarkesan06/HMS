@@ -1,22 +1,27 @@
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
+# app/mail_service.py
+from flask_mail import Message
+from app import mail
 from config import Config
 
-
 def send_transactional_email(to_email, subject, text_body=None, html_body=None):
-    """Send a transactional email using SendGrid Single Sender."""
-    if not Config.SENDGRID_API_KEY:
-        raise ValueError("SENDGRID_API_KEY is missing")
-
-    if not Config.SENDGRID_FROM_EMAIL:
-        raise ValueError("SENDGRID_FROM_EMAIL is missing")
-
-    message = Mail(
-        from_email=Config.SENDGRID_FROM_EMAIL,
-        to_emails=to_email,
-        subject=subject,
-        plain_text_content=text_body or "",
-        html_content=html_body or "",
-    )
-    client = SendGridAPIClient(Config.SENDGRID_API_KEY)
-    return client.send(message)
+    """Send email using Gmail SMTP"""
+    
+    if not Config.MAIL_PASSWORD:
+        print(f"⚠️ Email not configured. Would have sent to {to_email}")
+        return None
+    
+    try:
+        msg = Message(
+            subject=subject,
+            recipients=[to_email],
+            body=text_body or "",
+            html=html_body or "",
+            sender=Config.MAIL_DEFAULT_SENDER
+        )
+        mail.send(msg)
+        print(f"✅ Email sent to {to_email}")
+        return type('Response', (), {'status_code': 200})()
+        
+    except Exception as e:
+        print(f"❌ Email error: {str(e)}")
+        return None

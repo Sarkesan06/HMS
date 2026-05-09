@@ -292,8 +292,10 @@ def log_security_event(email, event_type, details, ip_address=None, user_agent=N
     except Exception as e:
         print(f"Security log warning: {e}")
 
+# In app/routes/auth.py - Replace the existing send_advanced_recovery_email function
+
 def send_advanced_recovery_email(email, code, name, recovery_method):
-    """Send advanced recovery email with multiple options"""
+    """Send advanced recovery email using Gmail SMTP"""
     
     subject = f"🔐 Account Recovery - {recovery_method} - Hospital Management System"
     
@@ -308,7 +310,6 @@ def send_advanced_recovery_email(email, code, name, recovery_method):
             .content {{ background: #f8f9fa; padding: 20px; border-radius: 0 0 10px 10px; }}
             .code {{ background: #e9ecef; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; border-radius: 10px; margin: 20px 0; }}
             .warning {{ background: #fff3cd; border: 1px solid #ffc107; padding: 10px; border-radius: 5px; margin: 15px 0; }}
-            .button {{ background: #2a9d8f; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; }}
             .footer {{ text-align: center; font-size: 12px; color: #666; margin-top: 20px; }}
         </style>
     </head>
@@ -320,20 +321,14 @@ def send_advanced_recovery_email(email, code, name, recovery_method):
             </div>
             <div class="content">
                 <p>Dear <strong>{name}</strong>,</p>
-                
                 <p>We received a request to recover your account using <strong>{recovery_method}</strong>.</p>
-                
-                <div class="code">
-                    {code}
-                </div>
-                
+                <div class="code">{code}</div>
                 <div class="warning">
                     <strong>⚠️ Security Alert:</strong>
-                    <ul style="margin: 10px 0 0 20px;">
+                    <ul>
                         <li>This code will expire in 15 minutes</li>
                         <li>Do not share this code with anyone</li>
-                        <li>If you didn't request this, your account may be at risk</li>
-                        <li><a href="{Config.FRONTEND_URL}/security-alert.html?email={email}" class="button">🔒 Report Suspicious Activity</a></li>
+                        <li>If you didn't request this, please ignore this email</li>
                     </ul>
                 </div>
             </div>
@@ -345,18 +340,40 @@ def send_advanced_recovery_email(email, code, name, recovery_method):
     </html>
     """
     
+    text_body = f"""
+Hospital Management System - Account Recovery
+
+Dear {name},
+
+We received a request to recover your account using {recovery_method}.
+
+Your verification code is: {code}
+
+This code will expire in 15 minutes.
+
+If you didn't request this, please ignore this email.
+
+Thank you,
+Hospital Management System
+"""
+    
     try:
-        print(f"Recovery email send attempt -> to: {email}, sender: {Config.SENDGRID_FROM_EMAIL}")
-        response = send_transactional_email(
-            to_email=email,
+        from flask_mail import Message
+        from app import mail
+        
+        msg = Message(
             subject=subject,
-            text_body=f"Your recovery code is {code}",
-            html_body=html_body,
+            recipients=[email],
+            body=text_body,
+            html=html_body,
+            sender=Config.MAIL_DEFAULT_SENDER
         )
-        print(f"Recovery email sent via SendGrid to {email}: {response.status_code}")
+        mail.send(msg)
+        print(f"✅ Recovery email sent to {email}")
         return True, None
+        
     except Exception as e:
-        print(f"Error sending SendGrid email: {e}")
+        print(f"❌ Failed to send email: {str(e)}")
         return False, str(e)
 
 # ================= 1. INITIATE RECOVERY WITH MULTIPLE METHODS =================
