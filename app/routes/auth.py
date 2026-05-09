@@ -421,14 +421,35 @@ def initiate_advanced_recovery():
             "attempts": 0
         })
         
-        # Send recovery code via email
-        email_sent = send_advanced_recovery_email(email, recovery_code, user_name, "Email Verification")
+        # Send recovery code via email (non-blocking fallback on failure)
+        try:
+            email_sent = send_advanced_recovery_email(email, recovery_code, user_name, "Email Verification")
+        except Exception as email_exception:
+            email_sent = False
+            print(f"Recovery email exception for {email}: {email_exception}")
+
         if not email_sent:
-            print(f"Recovery email failed for {email}")
-            return jsonify({
-                "success": False,
-                "message": "Recovery email could not be sent. Please verify mail configuration and try again."
-            }), 500
+            print(f"RECOVERY FALLBACK CODE for {email}: {recovery_code} (recovery_id={recovery_id})")
+            fallback_message = (
+                "Recovery session created, but email delivery is unavailable right now. "
+                "Please use another verification method or contact support."
+            )
+            if Config.RECOVERY_DEV_MODE:
+                fallback_message = "Recovery session created in development mode. Use the returned recovery code."
+
+            response_payload = {
+                "success": True,
+                "message": fallback_message,
+                "recovery_id": recovery_id,
+                "available_methods": available_methods,
+                "has_security_questions": len(security_questions) > 0,
+                "expires_in": 900,
+                "recipient_email": email
+            }
+            if Config.RECOVERY_DEV_MODE:
+                response_payload["dev_code"] = recovery_code
+
+            return jsonify(response_payload), 200
 
         return jsonify({
             "success": True,

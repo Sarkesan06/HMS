@@ -14,6 +14,8 @@ class Config:
     MAIL_USERNAME = os.getenv("MAIL_USERNAME", "sharkroshan@gmail.com")
     MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", " tpci kcfn gmtx mkov")
     MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER", MAIL_USERNAME)
+    MAIL_TIMEOUT = int(os.getenv("MAIL_TIMEOUT", "10"))
+    RECOVERY_DEV_MODE = os.getenv("RECOVERY_DEV_MODE", "false").lower() == "true"
 
 
     FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5500")
