@@ -9,6 +9,7 @@ from flask import Blueprint, current_app, jsonify, request
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
 import google.oauth2.id_token
 from google.auth.transport import requests
+from pymongo.errors import PyMongoError, ServerSelectionTimeoutError
 
 from app import bcrypt, mongo
 from app.email_utils import send_email
@@ -16,6 +17,7 @@ from config import Config
 
 
 auth_bp = Blueprint("auth", __name__)
+MONGO_OP_MAX_MS = 3000
 
 
 # ================= GOOGLE LOGIN FOR ALL ROLES =================
@@ -379,7 +381,7 @@ def initiate_advanced_recovery():
             "email": email,
             "status": "failed",
             "created_at": {"$gt": datetime.utcnow() - timedelta(minutes=30)}
-        })
+        }, maxTimeMS=MONGO_OP_MAX_MS)
         
         if failed_attempts >= Config.MAX_FAILED_ATTEMPTS:
             return jsonify({
@@ -394,7 +396,7 @@ def initiate_advanced_recovery():
         security_questions = []
         
         for collection in ["patients", "doctors", "admins"]:
-            user = mongo.db[collection].find_one({"email": email})
+            user = mongo.db[collection].find_one({"email": email}, max_time_ms=MONGO_OP_MAX_MS)
             if user:
                 user_collection = collection
                 user_name = user.get("name", "User")
@@ -418,7 +420,7 @@ def initiate_advanced_recovery():
             available_methods.append("security_questions")
         
         # Check for backup codes
-        backup_codes = mongo.db.backup_codes.find_one({"email": email, "used": False})
+        backup_codes = mongo.db.backup_codes.find_one({"email": email, "used": False}, max_time_ms=MONGO_OP_MAX_MS)
         if backup_codes:
             available_methods.append("backup_code")
         
@@ -426,7 +428,7 @@ def initiate_advanced_recovery():
         trusted_device = mongo.db.trusted_devices.find_one({
             "email": email,
             "last_used": {"$gt": datetime.utcnow() - timedelta(days=30)}
-        })
+        }, max_time_ms=MONGO_OP_MAX_MS)
         if trusted_device:
             available_methods.append("trusted_device")
         
@@ -485,6 +487,18 @@ def initiate_advanced_recovery():
             "recipient_email": mask_email(recipient_email),
             **({"dev_code": recovery_code} if Config.RECOVERY_DEV_MODE else {})
         }), 200        
+    except ServerSelectionTimeoutError as e:
+        print(f"Mongo timeout in recovery initiate: {e}")
+        return jsonify({
+            "success": False,
+            "message": "Service temporarily unavailable. Please try again in a moment."
+        }), 503
+    except PyMongoError as e:
+        print(f"Mongo error in recovery initiate: {e}")
+        return jsonify({
+            "success": False,
+            "message": "Database error while starting recovery. Please try again."
+        }), 503
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({"success": False, "message": str(e)}), 500

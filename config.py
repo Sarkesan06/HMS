@@ -57,5 +57,5 @@ class Config:
         separator = "&" if "?" in MONGO_URI else "?"
         MONGO_URI = (
             f"{MONGO_URI}{separator}"
-            "serverSelectionTimeoutMS=5000&connectTimeoutMS=5000&socketTimeoutMS=10000"
+            "serverSelectionTimeoutMS=5000&connectTimeoutMS=5000&socketTimeoutMS=10000&timeoutMS=8000"
         )
