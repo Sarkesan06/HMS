@@ -29,6 +29,50 @@ except ImportError:
 import numpy as np
 
 appointment_bp = Blueprint("appointment_bp", __name__)
+SLOT_DURATION_MINUTES = 10
+
+
+def _parse_appointment_datetime(date_str, time_str):
+    """Parse appointment date/time with common formats."""
+    if not date_str or not time_str:
+        return None
+    candidate = f"{date_str} {str(time_str).strip()}"
+    formats = [
+        "%Y-%m-%d %H:%M",
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%d %I:%M %p",
+        "%Y-%m-%d %I:%M%p",
+    ]
+    for fmt in formats:
+        try:
+            return datetime.strptime(candidate, fmt)
+        except ValueError:
+            continue
+    return None
+
+
+def _has_overlapping_slot(doctor_id, date_str, time_str, exclude_id=None):
+    """Return True when another non-cancelled appointment overlaps a 10-minute window."""
+    target_dt = _parse_appointment_datetime(date_str, time_str)
+    if not target_dt:
+        return False
+
+    query = {
+        "doctor_id": doctor_id,
+        "date": date_str,
+        "status": {"$ne": "Cancelled"},
+    }
+    if exclude_id:
+        query["_id"] = {"$ne": ObjectId(exclude_id)}
+
+    existing = list(mongo.db.appointments.find(query))
+    for appt in existing:
+        existing_dt = _parse_appointment_datetime(appt.get("date"), appt.get("time"))
+        if not existing_dt:
+            continue
+        if abs((existing_dt - target_dt).total_seconds()) < SLOT_DURATION_MINUTES * 60:
+            return True
+    return False
 
 # ================= GET ALL APPOINTMENTS =================
 @appointment_bp.route("/all", methods=["GET"])
@@ -261,16 +305,8 @@ def reschedule_appointment(id):
         if not appointment:
             return jsonify({"message": "Appointment not found"}), 404
         
-        # Check if new slot is available
-        existing = mongo.db.appointments.find_one({
-            "doctor_id": appointment["doctor_id"],
-            "date": new_date,
-            "time": new_time,
-            "status": {"$ne": "Cancelled"},
-            "_id": {"$ne": ObjectId(id)}
-        })
-        
-        if existing:
+        # Check if new slot overlaps any existing 10-minute slot
+        if _has_overlapping_slot(appointment["doctor_id"], new_date, new_time, exclude_id=id):
             return jsonify({"message": "This time slot is already booked"}), 409
         
         # Update appointment
@@ -919,14 +955,27 @@ def book_appointment():
                 pass
         
         # Create appointment document
+        appointment_date = data.get("date")
+        appointment_time = data.get("time")
+        doctor_id = data.get("doctor_id")
+        if not doctor_id or not appointment_date or not appointment_time:
+            return jsonify({"error": "doctor_id, date and time are required"}), 400
+
+        parsed_dt = _parse_appointment_datetime(appointment_date, appointment_time)
+        if not parsed_dt:
+            return jsonify({"error": "Invalid time format. Use HH:MM (24h) or HH:MM AM/PM"}), 400
+
+        if _has_overlapping_slot(doctor_id, appointment_date, appointment_time):
+            return jsonify({"error": "This time slot is already booked"}), 409
+
         appointment = {
-            "doctor_id": data.get("doctor_id"),
+            "doctor_id": doctor_id,
             "doctor": data.get("doctor_name"),
             "patient_id": patient_id,
             "patient": patient_name,
             "patient_email": patient_email,  # Store email in appointment
-            "date": data.get("date"),
-            "time": data.get("time"),
+            "date": appointment_date,
+            "time": appointment_time,
             "priority": data.get("priority", "Normal"),
             "status": "Pending",
             "type": data.get("type", "offline"),
@@ -947,8 +996,8 @@ def book_appointment():
                 patient_email=patient_email,
                 patient_name=patient_name,
                 doctor_name=data.get("doctor_name", "Doctor"),
-                appointment_date=data.get("date"),
-                appointment_time=data.get("time"),
+                appointment_date=appointment_date,
+                appointment_time=appointment_time,
                 appointment_id=appointment_id,
                 consult_type=data.get("type", "offline")
             )
